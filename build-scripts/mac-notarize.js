@@ -16,41 +16,60 @@ if (!fs.existsSync(target)) {
   process.exit(1);
 }
 
-function run(cmd, args) {
-  console.log(`$ ${cmd} ${args.filter((a) => !isSecret(a)).join(' ')}`);
-  const r = spawnSync(cmd, args, { stdio: 'inherit' });
-  if (r.status !== 0) process.exit(r.status === null ? 1 : r.status);
-}
-
-const secrets = new Set();
-function isSecret(a) {
-  return secrets.has(a);
-}
-
-// Prefer a stored keychain profile; fall back to Apple ID + app-specific password.
-let submitArgs;
+// Credentials: keychain profile, or Apple ID + app-specific password.
+let cred;
 const profile = process.env.APPLE_KEYCHAIN_PROFILE;
 if (profile) {
-  submitArgs = ['notarytool', 'submit', target, '--keychain-profile', profile, '--wait'];
+  cred = ['--keychain-profile', profile];
 } else {
-  const appleId = process.env.APPLE_ID;
-  const teamId = process.env.APPLE_TEAM_ID;
-  const appPw = process.env.APPLE_APP_PASSWORD;
-  if (!appleId || !teamId || !appPw) {
+  const { APPLE_ID, APPLE_TEAM_ID, APPLE_APP_PASSWORD } = process.env;
+  if (!APPLE_ID || !APPLE_TEAM_ID || !APPLE_APP_PASSWORD) {
     console.error('Set APPLE_KEYCHAIN_PROFILE, or APPLE_ID + APPLE_TEAM_ID + APPLE_APP_PASSWORD in .env');
     process.exit(1);
   }
-  secrets.add(appPw);
-  submitArgs = [
-    'notarytool', 'submit', target,
-    '--apple-id', appleId,
-    '--team-id', teamId,
-    '--password', appPw,
-    '--wait',
-  ];
+  cred = ['--apple-id', APPLE_ID, '--team-id', APPLE_TEAM_ID, '--password', APPLE_APP_PASSWORD];
 }
 
-run('xcrun', submitArgs);
-run('xcrun', ['stapler', 'staple', target]);
-run('xcrun', ['stapler', 'validate', target]);
+function xcrun(args, opts = {}) {
+  return spawnSync('xcrun', args, { encoding: 'utf8', ...opts });
+}
+
+function parseJson(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    const m = text && text.match(/\{[\s\S]*\}/);
+    if (m) {
+      try {
+        return JSON.parse(m[0]);
+      } catch {
+        /* fall through */
+      }
+    }
+    return null;
+  }
+}
+
+console.log(`Submitting ${path.basename(target)} to Apple notary service…`);
+const submit = xcrun(['notarytool', 'submit', target, ...cred, '--output-format', 'json', '--wait']);
+process.stdout.write(submit.stdout || '');
+process.stderr.write(submit.stderr || '');
+
+const result = parseJson(submit.stdout) || {};
+const { id, status } = result;
+console.log(`Notarization status: ${status || 'unknown'}${id ? ` (id ${id})` : ''}`);
+
+if (status !== 'Accepted') {
+  if (id) {
+    console.error('\nNotarization failed. Fetching log:\n');
+    const log = xcrun(['notarytool', 'log', id, ...cred], { stdio: 'inherit' });
+    if (log.status !== 0) console.error('(could not fetch notarization log)');
+  }
+  process.exit(1);
+}
+
+const staple = xcrun(['stapler', 'staple', target], { stdio: 'inherit' });
+if (staple.status !== 0) process.exit(staple.status === null ? 1 : staple.status);
+const validate = xcrun(['stapler', 'validate', target], { stdio: 'inherit' });
+if (validate.status !== 0) process.exit(validate.status === null ? 1 : validate.status);
 console.log(`Notarized + stapled: ${target}`);

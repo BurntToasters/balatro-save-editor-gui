@@ -37,15 +37,24 @@ function sign(target) {
   run('codesign', args);
 }
 
-// Sign nested Mach-O libraries inside-out, then the bundle itself.
-const nested = execSync(`find "${appPath}" -type f \\( -name "*.dylib" -o -name "*.so" \\)`, {
-  encoding: 'utf8',
-})
-  .split('\n')
-  .map((s) => s.trim())
-  .filter(Boolean);
+// Every Mach-O binary must be signed with hardened runtime + timestamp, not just
+// *.dylib/*.so (e.g. the extension-less Python.framework binary). Detect them all.
+function machOFiles() {
+  const out = execSync(`find "${appPath}" -type f -print0 | xargs -0 file`, {
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  return out
+    .split('\n')
+    .filter((l) => l.includes('Mach-O'))
+    .map((l) => l.replace(/: +Mach-O.*$/, ''))
+    .filter(Boolean)
+    // Deepest paths first so nested code is signed before its container.
+    .sort((a, b) => b.split('/').length - a.split('/').length);
+}
 
-console.log(`Signing ${nested.length} nested libraries…`);
+const nested = machOFiles();
+console.log(`Signing ${nested.length} Mach-O binaries inside-out…`);
 for (const f of nested) sign(f);
 
 console.log('Signing app bundle…');

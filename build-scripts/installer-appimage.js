@@ -17,6 +17,20 @@ if (!fs.existsSync(path.join(sourceDir, appName))) {
   process.exit(1);
 }
 
+// appimagetool is often an AppImage that needs FUSE; self-extract avoids that
+// on headless VMs/containers where FUSE is unavailable.
+const childEnv = { ...process.env, APPIMAGE_EXTRACT_AND_RUN: '1' };
+
+if (spawnSync('appimagetool', ['--version'], { env: childEnv }).error) {
+  console.error(
+    'appimagetool not found on PATH.\n' +
+      'Install it, e.g.:\n' +
+      '  wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage\n' +
+      '  chmod +x appimagetool-x86_64.AppImage && sudo mv appimagetool-x86_64.AppImage /usr/local/bin/appimagetool',
+  );
+  process.exit(1);
+}
+
 const appDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bse-appdir-'));
 const binDir = path.join(appDir, 'usr', 'bin');
 fs.mkdirSync(binDir, { recursive: true });
@@ -26,19 +40,21 @@ function cleanup() {
 }
 
 function run(cmd, args, opts = {}) {
-  const r = spawnSync(cmd, args, { stdio: 'inherit', ...opts });
-  if (r.error && r.error.code === 'ENOENT') {
-    console.error(`${cmd} not found.`);
+  console.log(`$ ${cmd} ${args.join(' ')}`);
+  const r = spawnSync(cmd, args, { stdio: 'inherit', env: childEnv, ...opts });
+  if (r.error) {
+    console.error(`${cmd} failed to start: ${r.error.message}`);
     cleanup();
     process.exit(1);
   }
   if (r.status !== 0) {
+    console.error(`${cmd} exited with status ${r.status}.`);
     cleanup();
     process.exit(r.status === null ? 1 : r.status);
   }
 }
 
-// Copy the PyInstaller onedir into usr/bin.
+console.log(`Staging AppDir at ${appDir}`);
 run('cp', ['-R', `${sourceDir}/.`, binDir]);
 
 fs.writeFileSync(
@@ -70,6 +86,6 @@ const outFile = path.join(RELEASE_DIR, `${artifactBase()}.AppImage`);
 fs.rmSync(outFile, { force: true });
 
 const appimageArch = arch() === 'arm64' ? 'aarch64' : 'x86_64';
-run('appimagetool', [appDir, outFile], { env: { ...process.env, ARCH: appimageArch } });
+run('appimagetool', [appDir, outFile], { env: { ...childEnv, ARCH: appimageArch } });
 cleanup();
 console.log(`Created ${outFile}`);
