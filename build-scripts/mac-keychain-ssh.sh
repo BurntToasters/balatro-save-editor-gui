@@ -1,23 +1,50 @@
 #!/usr/bin/env bash
-# Unlocks the login keychain for codesign access over SSH.
+# Unlocks the login keychain AND grants codesign access to the signing key,
+# which is required when running codesign over SSH (fixes errSecInternalComponent).
 # Usage: bash build-scripts/mac-keychain-ssh.sh
-# Reads KEYCHAIN_PASSWORD from .env if set, otherwise prompts.
-set -euo pipefail
+# Reads KEYCHAIN_PASSWORD from .env if not already in the environment.
+set -uo pipefail
 
-KEYCHAIN="${HOME}/Library/Keychains/login.keychain-db"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ENV_FILE="${SCRIPT_DIR}/../.env"
+KEYCHAIN="${KEYCHAIN_PATH:-${HOME}/Library/Keychains/login.keychain-db}"
 
-# Load KEYCHAIN_PASSWORD from .env if present and not already in env.
-if [ -z "${KEYCHAIN_PASSWORD:-}" ] && [ -f "$(dirname "$0")/../.env" ]; then
-  KEYCHAIN_PASSWORD=$(grep -E '^KEYCHAIN_PASSWORD=' "$(dirname "$0")/../.env" | cut -d= -f2- | tr -d '"' | tr -d "'")
+if [ -z "${KEYCHAIN_PASSWORD:-}" ] && [ -f "$ENV_FILE" ]; then
+  line="$(grep -E '^KEYCHAIN_PASSWORD=' "$ENV_FILE" || true)"
+  if [ -n "$line" ]; then
+    KEYCHAIN_PASSWORD="${line#KEYCHAIN_PASSWORD=}"
+    KEYCHAIN_PASSWORD="${KEYCHAIN_PASSWORD%\"}"; KEYCHAIN_PASSWORD="${KEYCHAIN_PASSWORD#\"}"
+    KEYCHAIN_PASSWORD="${KEYCHAIN_PASSWORD%\'}"; KEYCHAIN_PASSWORD="${KEYCHAIN_PASSWORD#\'}"
+  fi
 fi
 
 if [ -z "${KEYCHAIN_PASSWORD:-}" ]; then
-  echo -n "Keychain password: "
-  read -rs KEYCHAIN_PASSWORD
-  echo
+  if [ -t 0 ]; then
+    printf 'Keychain password: '
+    read -rs KEYCHAIN_PASSWORD
+    printf '\n'
+  else
+    echo "ERROR: KEYCHAIN_PASSWORD not set (add it to .env) and no TTY to prompt." >&2
+    exit 1
+  fi
 fi
 
+if [ ! -f "$KEYCHAIN" ]; then
+  echo "ERROR: keychain not found: $KEYCHAIN" >&2
+  exit 1
+fi
+
+echo "Unlocking $KEYCHAIN ..."
 security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
-# Keep it unlocked for the duration of the session (no auto-lock timeout).
+
+# Stop the keychain auto-relocking mid-build.
 security set-keychain-settings "$KEYCHAIN"
-echo "Keychain unlocked: $KEYCHAIN"
+
+# Grant codesign/security tools non-interactive access to the private key.
+# This is what actually fixes errSecInternalComponent over SSH.
+echo "Granting codesign access to signing key ..."
+security set-key-partition-list \
+  -S apple-tool:,apple:,codesign: \
+  -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" >/dev/null
+
+echo "Keychain ready for signing: $KEYCHAIN"
