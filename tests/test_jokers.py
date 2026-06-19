@@ -96,3 +96,55 @@ def test_add_joker_sanitizes_quotes(sample_save, tmp_path):
     # Must still round-trip (quotes stripped, not breaking the literal).
     je = reload_editor(je, tmp_path)
     assert je.list_jokers()[-1]['center'] == 'j_x; evil'
+
+
+# Minimal save whose single joker has the full real-card field set (incl. params).
+_PARAM_SAVE = (
+    'return{["cardAreas"]={["jokers"]={["config"]={["card_count"]=1,},'
+    '["cards"]={[1]={'
+    '["ability"]={["name"]="Riff-raff",["eternal"]=true,["set"]="Joker",},'
+    '["params"]={["bypass_discovery_center"]=true,["bypass_back"]={["x"]=1,["y"]=2,},},'
+    '["save_fields"]={["center"]="j_riff_raff",},'
+    '["edition"]={["foil"]=true,},["sell_cost"]=3,'
+    '},},},},}'
+)
+
+
+def _build_save(tmp_path, text):
+    p = tmp_path / 'save.jkr'
+    p.write_bytes(BalatroSaveFile.compress(bytes(text, 'ascii')))
+    return p
+
+
+def _card_has(bsf, index, key):
+    cards = list(bsf['cardAreas']['jokers']['cards'])
+    return key in cards[index]
+
+
+def test_added_joker_has_params_via_template(sample_save, tmp_path):
+    # Remove all jokers so add falls back to the template, then verify params.
+    je = editor(sample_save)
+    je.delete_joker(0)
+    je.delete_joker(0)
+    je.add_joker('j_dna', 'DNA')
+    je = reload_editor(je, tmp_path)
+    assert _card_has(je.save_file, 0, 'params')
+
+
+def test_added_joker_clones_params_and_strips_cosmetics(tmp_path):
+    bsf = BalatroSaveFile(str(_build_save(tmp_path, _PARAM_SAVE)))
+    je = JokerEditor(bsf)
+    je.add_joker('j_blueprint', 'Blueprint')
+
+    p = tmp_path / 'edited.jkr'
+    p.write_bytes(BalatroSaveFile.compress(bytes(str(bsf), 'ascii')))
+    reloaded = BalatroSaveFile(str(p))
+    je2 = JokerEditor(reloaded)
+
+    jokers = je2.list_jokers()
+    assert len(jokers) == 2
+    added = jokers[-1]
+    assert added['center'] == 'j_blueprint'
+    assert _card_has(reloaded, 1, 'params')      # cloned structural field present
+    assert added['edition'] is None              # cosmetics cleared
+    assert added['stickers'] == []

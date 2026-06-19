@@ -5,14 +5,19 @@ EDITIONS = ('foil', 'holo', 'polychrome', 'negative')
 STICKERS = ('eternal', 'perishable', 'rental')
 
 # Neutral fallback card used when adding a joker with no existing card to clone.
+# Mirrors the full field set Balatro writes (incl. params / bypass_* flags) so
+# the game doesn't crash indexing a missing field on load.
 TEMPLATE_JOKER = (
     '{'
     '["ability"]={["name"]="Joker",["mult"]=0,["t_mult"]=0,["h_mult"]=0,["h_x_mult"]=0,'
     '["x_mult"]=1,["t_chips"]=0,["h_dollars"]=0,["p_dollars"]=0,["h_size"]=0,["d_size"]=0,'
     '["extra"]=0,["extra_value"]=0,["perma_bonus"]=0,["bonus"]=0,["set"]="Joker",["type"]="",["order"]=1,},'
+    '["params"]={["bypass_discovery_center"]=true,["discover"]=false,["bypass_discovery_ui"]=true,'
+    '["bypass_back"]={["x"]=0,["y"]=0,},},'
     '["save_fields"]={["center"]="j_joker",},'
     '["label"]="Joker",["sort_id"]=1,["cost"]=2,["base_cost"]=2,["sell_cost"]=1,["extra_cost"]=0,'
     '["facing"]="front",["sprite_facing"]="front",["debuff"]=false,["rank"]=1,["added_to_deck"]=true,'
+    '["bypass_discovery_ui"]=true,["bypass_discovery_center"]=true,["bypass_lock"]=true,'
     '["base"]={["face_nominal"]=0,["times_played"]=0,["nominal"]=0,["suit_nominal"]=0,},'
     '}'
 )
@@ -129,10 +134,27 @@ class JokerEditor(object):
 
     def add_joker(self, center, name):
         cards = self._cards()
-        cards.append_value(TEMPLATE_JOKER)
+        entries = cards.entries()
+        # Clone an existing card when available so every structural field the
+        # game needs (params, base, bypass_* flags) is present; otherwise use
+        # the full template. A bare hand-built card crashes Balatro on load.
+        template = str(entries[0].value) if entries else TEMPLATE_JOKER
+        cards.append_value(template)
         cards.reindex()
-        self._retarget(cards.entries()[-1].value, center, name)
+        new_card = cards.entries()[-1].value
+        self._retarget(new_card, center, name)
+        self._clean_added(new_card)
         self._sync_count()
+
+    def _clean_added(self, card):
+        # A cloned card carries the source joker's cosmetics; clear them so the
+        # added joker starts plain.
+        card.delete_entry('edition')
+        if 'ability' in card:
+            ability = card['ability']
+            for s in STICKERS:
+                if s in ability:
+                    ability[s] = 'false'
 
     # ---- helpers ----
 
