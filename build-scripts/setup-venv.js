@@ -28,6 +28,8 @@ const py = venvPython();
 if (!fs.existsSync(py)) {
   run(pickBasePython(), ['-m', 'venv', VENV]);
 }
+// Bootstrap pip (Homebrew Python on Linux doesn't bundle it in venvs).
+run(py, ['-m', 'ensurepip', '--upgrade']);
 run(py, ['-m', 'pip', 'install', '--upgrade', 'pip']);
 run(py, ['-m', 'pip', 'install', '-r', path.join(ROOT, 'requirements-dev.txt')]);
 console.log('venv ready.');
