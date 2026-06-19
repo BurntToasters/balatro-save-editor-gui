@@ -30,6 +30,10 @@ node_modules/
 # Balatro save backups
 *.bak
 
+# Balatro saves (never commit real saves)
+*.jkr
+samples/
+
 # OS / editor cruft
 .DS_Store
 

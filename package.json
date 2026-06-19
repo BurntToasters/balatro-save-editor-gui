@@ -1,6 +1,6 @@
 {
   "name": "balatro-save-editor-gui",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Cross-platform GUI for editing Balatro save.jkr files",
   "productName": "Balatro Save Editor",
@@ -42,6 +42,7 @@
     "release:win": "npm run build && npm run dist:win && npm run sign:gpg && npm run publish",
     "release:linux": "npm run build && npm run dist:linux && npm run sign:gpg && npm run publish",
     "bump": "node build-scripts/bump-version.js",
+    "sync": "node build-scripts/sync-version.js",
     "clean": "node build-scripts/clean.js"
   },
   "devDependencies": {

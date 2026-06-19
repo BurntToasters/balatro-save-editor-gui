@@ -1,5 +1,5 @@
 from . import paths, resources
-from .editor import BalatroSaveEditor
+from .editor import BalatroSaveEditor, JokerEditor, joker_catalog
 
 
 class Api:
@@ -110,6 +110,53 @@ class Api:
             return {'ok': True, 'state': self.get_state()}
         except Exception as e:
             return {'ok': False, 'error': str(e)}
+
+    # ---- jokers ----
+
+    def joker_catalog(self):
+        return joker_catalog.CATALOG
+
+    def _joker_editor(self):
+        return JokerEditor(self.editor.balatro_save_file)
+
+    def get_jokers(self):
+        if self.editor is None:
+            return {'ok': False, 'error': 'No save loaded.'}
+        try:
+            return {'ok': True, 'jokers': self._joker_editor().list_jokers()}
+        except Exception as e:
+            return {'ok': False, 'error': str(e)}
+
+    def _joker_op(self, fn):
+        if self.editor is None:
+            return {'ok': False, 'error': 'No save loaded.'}
+        try:
+            je = self._joker_editor()
+            fn(je)
+            return {'ok': True, 'jokers': je.list_jokers()}
+        except Exception as e:
+            return {'ok': False, 'error': str(e)}
+
+    def joker_set_edition(self, index, edition):
+        return self._joker_op(lambda je: je.set_edition(int(index), edition or None))
+
+    def joker_set_sticker(self, index, sticker, on):
+        return self._joker_op(lambda je: je.set_sticker(int(index), sticker, bool(on)))
+
+    def joker_set_sell(self, index, value):
+        return self._joker_op(lambda je: je.set_sell(int(index), value))
+
+    def joker_duplicate(self, index):
+        return self._joker_op(lambda je: je.duplicate_joker(int(index)))
+
+    def joker_delete(self, index):
+        return self._joker_op(lambda je: je.delete_joker(int(index)))
+
+    def joker_set_type(self, index, center, name):
+        return self._joker_op(lambda je: je.set_joker_type(int(index), center, name))
+
+    def joker_add(self, center, name):
+        return self._joker_op(lambda je: je.add_joker(center, name))
 
     # ---- helpers ----
 

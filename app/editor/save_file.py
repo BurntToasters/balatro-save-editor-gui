@@ -6,6 +6,8 @@ import zlib
 
 from .token_iterator import TokenIterator
 
+TOKEN_RE = r'([\[\]{},="\\])'
+
 
 class Struct(object):
     def __init__(self, token_iterator):
@@ -54,11 +56,18 @@ class MapEntryStruct(Struct):
 
     @property
     def key(self):
-        return str(self.structs[0].structs[1].structs[1])
+        # Handles quoted string keys (["name"]) and bare keys ([1], [-1]).
+        inner = self.structs[0].structs[1].structs
+        if len(inner) >= 3 and inner[0] == '"' and inner[-1] == '"':
+            return ''.join(inner[1:-1])
+        return ''.join(str(t) for t in inner)
 
     @property
     def value(self):
         return self.structs[1].structs[0]
+
+    def set_int_key(self, n):
+        self.structs[0].structs[1].structs = [str(n)]
 
 
 class MapStruct(Struct):
@@ -112,6 +121,40 @@ class MapStruct(Struct):
                 continue
             yield struct.value
 
+    def entries(self):
+        return [s for s in self.structs if isinstance(s, MapEntryStruct)]
+
+    def entry_at(self, pos):
+        return self.entries()[pos]
+
+    def insert_entry(self, entry):
+        # Insert before the closing '}' literal (always the last struct).
+        self.structs.insert(len(self.structs) - 1, entry)
+
+    def delete_entry(self, key):
+        for i, struct in enumerate(self.structs):
+            if isinstance(struct, MapEntryStruct) and struct.key == key:
+                del self.structs[i]
+                return True
+        return False
+
+    def delete_at(self, pos):
+        self.structs.remove(self.entries()[pos])
+
+    def reindex(self):
+        # Renumber integer-keyed entries to 1..n (for array-like maps e.g. cards).
+        i = 1
+        for struct in self.structs:
+            if isinstance(struct, MapEntryStruct):
+                struct.set_int_key(i)
+                i += 1
+
+    def append_value(self, value_text):
+        keys = [int(e.key) for e in self.entries() if e.key.lstrip('-').isdigit()]
+        n = (max(keys) + 1) if keys else 1
+        self.insert_entry(make_entry(f'[{n}]={value_text},'))
+        return n
+
 
 class BalatroSaveFile(object):
     def __init__(self, save_file_path):
@@ -120,7 +163,7 @@ class BalatroSaveFile(object):
         self.structs = []
 
         text = str(self.decompress(self.save_file_data), encoding='ascii')
-        tokens = re.split(r'([\[\]{},="\\])', text)
+        tokens = re.split(TOKEN_RE, text)
         token_iterator = TokenIterator(tokens)
 
         self.structs.append(LiteralStruct(token_iterator, next(token_iterator)))
@@ -166,3 +209,9 @@ class BalatroSaveFile(object):
 
     def __getitem__(self, name):
         return self.structs[1][name]
+
+
+def make_entry(text):
+    """Build a MapEntryStruct from a serialized entry like '["k"]=v,' (trailing comma required)."""
+    token_iterator = TokenIterator(re.split(TOKEN_RE, text))
+    return MapEntryStruct(token_iterator, next(token_iterator))
