@@ -1,8 +1,17 @@
+from .joker_catalog import CONFIGS
 from .save_file import make_entry
 
 # Internal card.edition keys.
 EDITIONS = ('foil', 'holo', 'polychrome', 'negative')
 STICKERS = ('eternal', 'perishable', 'rental')
+
+# Standard ability fields present on every joker (mirrors what Balatro writes);
+# the target joker's config is overlaid on top.
+_ABILITY_BASE = {
+    'mult': 0, 't_mult': 0, 'h_mult': 0, 'h_x_mult': 0, 'x_mult': 1, 't_chips': 0,
+    'h_dollars': 0, 'p_dollars': 0, 'h_size': 0, 'd_size': 0,
+    'extra': 0, 'extra_value': 0, 'perma_bonus': 0, 'bonus': 0, 'type': '',
+}
 
 # Neutral fallback card used when adding a joker with no existing card to clone.
 # Mirrors the full field set Balatro writes (incl. params / bypass_* flags) so
@@ -34,6 +43,36 @@ def _strval(node):
     if len(s) >= 2 and s[0] == '"' and s[-1] == '"':
         return s[1:-1]
     return s
+
+
+def _lua(value):
+    # Serialize a Python value to Balatro's Lua-table text form.
+    if isinstance(value, bool):
+        return 'true' if value else 'false'
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, float):
+        return repr(value)
+    if isinstance(value, dict):
+        parts = []
+        for k, v in value.items():
+            key = f'[{k}]' if isinstance(k, int) else f'["{_clean(k)}"]'
+            parts.append(f'{key}={_lua(v)},')
+        return '{' + ''.join(parts) + '}'
+    return f'"{_clean(value)}"'
+
+
+def _ability_text(center, name):
+    # Build a fresh ability block for a joker type from its config so per-joker
+    # values (e.g. Throwback's 0.25 X mult per skip) are correct.
+    info = CONFIGS.get(center, {})
+    ability = dict(_ABILITY_BASE)
+    ability['name'] = name
+    ability['set'] = info.get('set', 'Joker')
+    ability['order'] = info.get('order', 0)
+    for k, v in (info.get('config') or {}).items():
+        ability['x_mult' if k == 'Xmult' else k] = v
+    return _lua(ability)
 
 
 class JokerEditor(object):
@@ -169,16 +208,24 @@ class JokerEditor(object):
                 sf.insert_entry(make_entry(f'["center"]="{center}",'))
         else:
             card.insert_entry(make_entry(f'["save_fields"]={{["center"]="{center}",}},'))
-        if 'ability' in card:
-            ability = card['ability']
-            if 'name' in ability:
-                ability['name'] = name
-            else:
-                ability.insert_entry(make_entry(f'["name"]="{name}",'))
         if 'label' in card:
             card['label'] = name
         else:
             card.insert_entry(make_entry(f'["label"]="{name}",'))
+
+        info = CONFIGS.get(center)
+        if info is not None:
+            # Rebuild the ability from the target joker's config (correct scaling).
+            card.delete_entry('ability')
+            card.insert_entry(make_entry(f'["ability"]={_ability_text(center, name)},'))
+            cost = str(info.get('cost', 0))
+            if 'cost' in card:
+                card['cost'] = cost
+            if 'base_cost' in card:
+                card['base_cost'] = cost
+        elif 'ability' in card and 'name' in card['ability']:
+            # Unknown/modded center: keep cloned ability, just rename.
+            card['ability']['name'] = name
 
     def _sync_count(self):
         cfg = self._jokers()['config']
