@@ -1,0 +1,60 @@
+node_modules/
+*.zip
+dist/
+release/
+.DS_Store
+*.bak
+*.env
+!.env.example
+*.cer
+*.cert
+*.pem
+**/.*/
+!.github/
+!.husky/
+!.husky/**
+licenses.json
+coverage/
+*.lcov
+.nyc_output
+*.tsbuildinfo
+.eslintcache
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Node diagnostic reports
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Build artifacts
+build/Release
+*.tgz
+src/renderer/modules/*.js
+src/renderer/modules/*.js.map
+src/renderer/rosiEngine.js
+src/renderer/rosiEngine.js.map
+
+# macOS provisioning
+*.provisionprofile
+*.mobileprovision
+
+# FFmpeg binaries (downloaded locally, not committed)
+resources/ffmpeg/**/ffmpeg
+resources/ffmpeg/**/ffmpeg.exe
+resources/ffmpeg/**/ffprobe
+resources/ffmpeg/**/ffprobe.exe
+resources/ffmpeg/**/ffplay
+resources/ffmpeg/**/ffplay.exe
+
+# REPL history
+.node_repl_history
