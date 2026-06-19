@@ -1,0 +1,6 @@
+# Runtime dependencies
+pywebview==6.2.1
+
+# Linux build VMs also need a web backend, install one of:
+#   pip install pywebview[qt]    (QtWebEngine)
+# or system PyGObject + WebKit2GTK packages.

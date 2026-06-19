@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Balatro Save Editor</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>Balatro Save Editor</h1>
+      <div class="save-bar">
+        <select id="profile" title="Save profile"></select>
+        <button id="open" class="ghost">Open…</button>
+        <button id="reload" class="ghost">Reload</button>
+      </div>
+      <p id="save-path" class="path"></p>
+    </header>
+
+    <main id="presets">
+      <section class="preset" data-key="money">
+        <label class="toggle">
+          <input type="checkbox" id="en-money" />
+          <span>Money</span>
+        </label>
+        <div class="body">
+          <p class="current">Current: <b id="cur-money">—</b></p>
+          <label class="field">Set to
+            <input type="number" id="val-money" min="0" step="1" placeholder="19999" />
+          </label>
+        </div>
+      </section>
+
+      <section class="preset" data-key="chips">
+        <label class="toggle">
+          <input type="checkbox" id="en-chips" />
+          <span>Beat current blind</span>
+        </label>
+        <div class="body">
+          <p class="current">Blind target: <b id="cur-blind">—</b></p>
+          <p class="hint">Sets your chips to one below the blind target.</p>
+        </div>
+      </section>
+
+      <section class="preset" data-key="multipliers">
+        <label class="toggle">
+          <input type="checkbox" id="en-mult" />
+          <span>Hand multipliers</span>
+        </label>
+        <div class="body">
+          <p class="current">Current: <b id="cur-mult">—</b></p>
+          <label class="field">Set all hands to
+            <input type="number" id="val-mult" min="1" step="1" value="10000" />
+          </label>
+        </div>
+      </section>
+
+      <section class="preset" data-key="card_limits">
+        <label class="toggle">
+          <input type="checkbox" id="en-limits" />
+          <span>Card slot limits</span>
+        </label>
+        <div class="body">
+          <p class="current">Current: jokers <b id="cur-jokers">—</b>, consumables <b id="cur-cons">—</b></p>
+          <label class="field">Jokers
+            <input type="number" id="val-jokers" min="0" step="1" value="20" />
+          </label>
+          <label class="field">Consumables
+            <input type="number" id="val-cons" min="0" step="1" value="10" />
+          </label>
+        </div>
+      </section>
+
+      <section class="preset" data-key="strip_eternal">
+        <label class="toggle">
+          <input type="checkbox" id="en-eternal" />
+          <span>Remove "eternal" from jokers</span>
+        </label>
+        <div class="body">
+          <p class="current"><b id="cur-eternal">0</b> eternal joker(s) in this save</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="actions">
+      <label class="toggle backup">
+        <input type="checkbox" id="backup" checked />
+        <span>Back up save before writing</span>
+      </label>
+      <button id="save" class="primary" disabled>Apply &amp; Save</button>
+    </footer>
+
+    <div id="status" class="status" role="status"></div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,46 @@
+{
+  "name": "balatro-save-editor-gui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cross-platform GUI for editing Balatro save.jkr files",
+  "productName": "Balatro Save Editor",
+  "appId": "com.burnttoasters.balatrosaveeditor",
+  "desktopName": "com.burnttoasters.balatrosaveeditor.desktop",
+  "keywords": [
+    "balatro",
+    "save-editor",
+    "pywebview",
+    "cross-platform"
+  ],
+  "engines": {
+    "node": ">=24.x",
+    "npm": ">=10.x"
+  },
+  "scripts": {
+    "venv": "node build-scripts/setup-venv.js",
+    "dev": "node build-scripts/venv-python.js -m app.main",
+    "test": "node build-scripts/venv-python.js -m pytest",
+    "smoke:gui": "node build-scripts/venv-python.js build-scripts/smoke-gui.py",
+    "build": "node build-scripts/build.js",
+    "smoke:runtime": "node build-scripts/smoke-runtime.js",
+    "dist": "node build-scripts/installer.js",
+    "dist:mac": "node build-scripts/installer-dmg.js",
+    "dist:win": "node build-scripts/installer-nsis.js",
+    "dist:linux": "node build-scripts/installer-appimage.js",
+    "sign:mac": "dotenv -e .env -- node build-scripts/mac-sign.js",
+    "notarize:mac": "dotenv -e .env -- node build-scripts/mac-notarize.js"
+  },
+  "devDependencies": {
+    "dotenv-cli": "^11.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BurntToasters/balatro-save-editor-gui.git"
+  },
+  "author": "BurntToasters <code@rosie.run>",
+  "license": "MPL-2.0",
+  "bugs": {
+    "url": "https://github.com/BurntToasters/balatro-save-editor-gui/issues"
+  },
+  "homepage": "https://github.com/BurntToasters/balatro-save-editor-gui#readme"
+}
