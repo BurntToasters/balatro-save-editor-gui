@@ -62,7 +62,8 @@ fs.writeFileSync(
   `[Desktop Entry]
 Type=Application
 Name=${productName}
-Version=${version}
+Version=1.0
+X-AppImage-Version=${version}
 Exec=${appName}
 Icon=${appName}
 Categories=Utility;
