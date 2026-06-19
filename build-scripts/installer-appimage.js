@@ -4,7 +4,7 @@ const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { ROOT, RELEASE_DIR, productName, appName, arch, artifactBase, ensureReleaseDir } = require('./pkg');
+const { ROOT, RELEASE_DIR, productName, appName, arch, artifactBase, cleanReleaseDir } = require('./pkg');
 
 if (process.platform !== 'linux') {
   console.error('AppImage packaging runs on Linux only.');
@@ -81,7 +81,7 @@ exec "$HERE/usr/bin/${appName}" "$@"
 );
 fs.chmodSync(appRun, 0o755);
 
-ensureReleaseDir();
+cleanReleaseDir();
 const outFile = path.join(RELEASE_DIR, `${artifactBase()}.AppImage`);
 fs.rmSync(outFile, { force: true });
 
