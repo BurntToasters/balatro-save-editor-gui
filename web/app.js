@@ -136,6 +136,73 @@ async function applyAndSave() {
   }
 }
 
+function openExternal(url) {
+  if (url && window.pywebview) api().open_url(url);
+}
+
+function licenseEntryNode(e) {
+  const wrap = document.createElement('div');
+  wrap.className = 'license-entry';
+
+  const head = document.createElement('div');
+  head.className = 'license-head';
+  const title = document.createElement('span');
+  title.className = 'license-name';
+  title.textContent = e.version ? `${e.name} ${e.version}` : e.name;
+  const tag = document.createElement('span');
+  tag.className = 'license-tag';
+  tag.textContent = e.license || 'Unknown';
+  head.append(title, tag);
+  wrap.appendChild(head);
+
+  if (e.url) {
+    const a = document.createElement('a');
+    a.href = '#';
+    a.className = 'license-url';
+    a.textContent = e.url;
+    a.dataset.url = e.url;
+    wrap.appendChild(a);
+  }
+
+  if (e.text) {
+    const det = document.createElement('details');
+    const sum = document.createElement('summary');
+    sum.textContent = 'License text';
+    const pre = document.createElement('pre');
+    pre.textContent = e.text;
+    det.append(sum, pre);
+    wrap.appendChild(det);
+  }
+  return wrap;
+}
+
+async function openLicenses() {
+  const body = $('licenses-body');
+  body.textContent = 'Loading…';
+  $('licenses-modal').hidden = false;
+  let data;
+  try {
+    data = await api().get_licenses();
+  } catch {
+    body.textContent = 'Could not load license info.';
+    return;
+  }
+  body.textContent = '';
+  const entries = data.entries || [];
+  if (data.app) {
+    body.appendChild(licenseEntryNode({ ...data.app, license: (data.app.license || '') + ' · this app' }));
+  }
+  if (!entries.length && !data.app) {
+    body.textContent = 'License information was not generated for this build.';
+    return;
+  }
+  for (const e of entries) body.appendChild(licenseEntryNode(e));
+}
+
+function closeLicenses() {
+  $('licenses-modal').hidden = true;
+}
+
 window.addEventListener('pywebviewready', async () => {
   $('open').addEventListener('click', async () => {
     const path = await api().pick_file();
@@ -151,6 +218,22 @@ window.addEventListener('pywebviewready', async () => {
     if (e.target.value) loadPath(e.target.value);
   });
   $('save').addEventListener('click', applyAndSave);
+
+  $('licenses-btn').addEventListener('click', openLicenses);
+  $('licenses-close').addEventListener('click', closeLicenses);
+  $('licenses-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'licenses-modal') closeLicenses();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeLicenses();
+  });
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest('[data-url]');
+    if (link) {
+      e.preventDefault();
+      openExternal(link.dataset.url);
+    }
+  });
 
   const saves = await refreshProfiles();
   if (saves.length) {

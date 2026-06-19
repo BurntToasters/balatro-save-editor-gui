@@ -11,6 +11,10 @@ build/
 dist/
 release/
 
+# Generated license artifacts
+web/licenses.json
+THIRD_PARTY_NOTICES.txt
+
 # Node
 node_modules/
 

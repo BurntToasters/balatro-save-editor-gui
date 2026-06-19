@@ -55,4 +55,8 @@ Every write creates a timestamped `.bak` next to the save. After writing, the fi
 
 ## License
 
-[MPL-2.0](LICENSE).
+This project is licensed [MPL-2.0](LICENSE).
+
+The save-parsing core is derived from [problemsalved/balatro_save_editor](https://github.com/problemsalved/balatro_save_editor) (the upstream repo has no separate license file; included with attribution to the original author).
+
+Bundled third-party components (CPython, pywebview, pyobjc, etc.) and their licenses are listed in-app under the **Licenses** button, and written to `THIRD_PARTY_NOTICES.txt` on each build (`npm run licenses`).

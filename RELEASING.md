@@ -41,6 +41,10 @@ Each command runs, in order:
 | `sign:gpg` (detached `.asc` + `SHA256SUMS-<platform>.txt`) | ✓ | ✓ | ✓ |
 | `publish` (draft GitHub release upload) | ✓ | ✓ | ✓ |
 
+`build` auto-runs `licenses` first (a `prebuild` hook), which regenerates
+`web/licenses.json` (bundled into the app for the in-app **Licenses** viewer) and
+`THIRD_PARTY_NOTICES.txt` at the repo root.
+
 Windows is GPG-signed only (no Authenticode). The release is left as a **draft**
 on GitHub — review and publish it manually.
 

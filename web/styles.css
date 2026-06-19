@@ -205,3 +205,132 @@ button.primary:disabled {
 .status.error {
   color: var(--err);
 }
+
+.credits {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 22px 16px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.credits a {
+  color: var(--accent-2);
+  text-decoration: none;
+}
+
+.credits a:hover {
+  text-decoration: underline;
+}
+
+button.link {
+  background: none;
+  border: none;
+  color: var(--accent-2);
+  padding: 0;
+  font-size: 12px;
+}
+
+button.link:hover {
+  text-decoration: underline;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 10;
+}
+
+.modal[hidden] {
+  display: none;
+}
+
+.modal-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 720px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.modal-body {
+  overflow-y: auto;
+  padding: 14px 18px;
+}
+
+.license-entry {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.license-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.license-name {
+  font-weight: 600;
+}
+
+.license-tag {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.license-url {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--accent-2);
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.license-entry details {
+  margin-top: 8px;
+}
+
+.license-entry summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.license-entry pre {
+  margin: 8px 0 0;
+  max-height: 280px;
+  overflow: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

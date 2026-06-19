@@ -1,6 +1,7 @@
+import json
 from pathlib import Path
 
-from app import paths
+from app import paths, resources
 from app.api import Api
 
 
@@ -113,3 +114,29 @@ def test_detect_saves(monkeypatch, tmp_path):
     monkeypatch.setattr(paths, 'find_saves', lambda: [fake])
     out = Api().detect_saves()
     assert out == [{'path': str(fake), 'label': 'Profile 1'}]
+
+
+def test_open_url_only_allows_http(monkeypatch):
+    calls = []
+    monkeypatch.setattr('webbrowser.open', lambda u: calls.append(u))
+    api = Api()
+    assert api.open_url('https://example.com') is True
+    assert api.open_url('http://example.com') is True
+    assert api.open_url('file:///etc/passwd') is False
+    assert api.open_url('javascript:alert(1)') is False
+    assert api.open_url(None) is False
+    assert calls == ['https://example.com', 'http://example.com']
+
+
+def test_get_licenses_reads_file(monkeypatch, tmp_path):
+    payload = {'app': {'name': 'Balatro Save Editor', 'license': 'MPL-2.0'}, 'entries': [{'name': 'bottle'}]}
+    f = tmp_path / 'licenses.json'
+    f.write_text(json.dumps(payload), encoding='utf-8')
+    monkeypatch.setattr(resources, 'licenses_path', lambda: str(f))
+    assert Api().get_licenses() == payload
+
+
+def test_get_licenses_missing_is_graceful(monkeypatch, tmp_path):
+    monkeypatch.setattr(resources, 'licenses_path', lambda: str(tmp_path / 'nope.json'))
+    out = Api().get_licenses()
+    assert out == {'app': None, 'entries': []}

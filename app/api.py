@@ -1,4 +1,4 @@
-from . import paths
+from . import paths, resources
 from .editor import BalatroSaveEditor
 
 
@@ -9,6 +9,18 @@ class Api:
         self._window = window
         self.editor = None
         self.save_path = None
+
+    # ---- info ----
+
+    def get_licenses(self):
+        return resources.load_licenses()
+
+    def open_url(self, url):
+        if not isinstance(url, str) or not url.startswith(('http://', 'https://')):
+            return False
+        import webbrowser
+        webbrowser.open(url)
+        return True
 
     # ---- discovery ----
 
