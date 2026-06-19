@@ -148,3 +148,43 @@ def test_added_joker_clones_params_and_strips_cosmetics(tmp_path):
     assert _card_has(reloaded, 1, 'params')      # cloned structural field present
     assert added['edition'] is None              # cosmetics cleared
     assert added['stickers'] == []
+
+
+def _ability(bsf, index):
+    return list(bsf['cardAreas']['jokers']['cards'])[index]['ability']
+
+
+def test_add_joker_uses_target_config(sample_save, tmp_path):
+    je = editor(sample_save)
+    je.add_joker('j_throwback', 'Throwback')
+    je = reload_editor(je, tmp_path)
+    ab = _ability(je.save_file, len(je.list_jokers()) - 1)
+    assert str(ab['extra']) == '0.25'        # Throwback's per-skip X mult
+    assert str(ab['name']) == '"Throwback"'
+    assert str(ab['x_mult']) == '1'
+
+
+def test_add_joker_sets_flat_mult(sample_save, tmp_path):
+    je = editor(sample_save)
+    je.add_joker('j_joker', 'Joker')
+    je = reload_editor(je, tmp_path)
+    assert str(_ability(je.save_file, len(je.list_jokers()) - 1)['mult']) == '4'
+
+
+def test_add_joker_nested_config(sample_save, tmp_path):
+    je = editor(sample_save)
+    je.add_joker('j_greedy_joker', 'Greedy Joker')
+    je = reload_editor(je, tmp_path)
+    extra = _ability(je.save_file, len(je.list_jokers()) - 1)['extra']
+    assert 's_mult' in extra and str(extra['s_mult']) == '3'
+    assert str(extra['suit']) == '"Diamonds"'
+
+
+def test_set_joker_type_rebuilds_ability(sample_save, tmp_path):
+    je = editor(sample_save)
+    je.set_joker_type(0, 'j_jolly', 'Jolly Joker')
+    je = reload_editor(je, tmp_path)
+    ab = _ability(je.save_file, 0)
+    assert str(ab['t_mult']) == '8'
+    assert str(ab['type']) == '"Pair"'
+    assert je.list_jokers()[0]['name'] == 'Jolly Joker'
