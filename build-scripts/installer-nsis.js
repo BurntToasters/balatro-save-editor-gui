@@ -3,7 +3,7 @@
 const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
-const { ROOT, RELEASE_DIR, pkg, version, productName, appName, artifactBase, ensureReleaseDir } = require('./pkg');
+const { ROOT, RELEASE_DIR, pkg, version, productName, appName, artifactBase, cleanReleaseDir } = require('./pkg');
 
 if (process.platform !== 'win32') {
   console.error('NSIS packaging runs on Windows only.');
@@ -17,7 +17,7 @@ if (!fs.existsSync(path.join(sourceDir, exeName))) {
   process.exit(1);
 }
 
-ensureReleaseDir();
+cleanReleaseDir();
 const outFile = path.join(RELEASE_DIR, `${artifactBase()}.exe`);
 fs.rmSync(outFile, { force: true });
 

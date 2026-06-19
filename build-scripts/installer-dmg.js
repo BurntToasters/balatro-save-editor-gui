@@ -4,7 +4,7 @@ const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { ROOT, RELEASE_DIR, macAppName, productName, artifactBase, ensureReleaseDir } = require('./pkg');
+const { ROOT, RELEASE_DIR, macAppName, productName, artifactBase, cleanReleaseDir } = require('./pkg');
 
 if (process.platform !== 'darwin') {
   console.error('DMG packaging runs on macOS only.');
@@ -17,7 +17,7 @@ if (!fs.existsSync(appPath)) {
   process.exit(1);
 }
 
-ensureReleaseDir();
+cleanReleaseDir();
 const dmgPath = path.join(RELEASE_DIR, `${artifactBase()}.dmg`);
 fs.rmSync(dmgPath, { force: true });
 

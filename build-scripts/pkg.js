@@ -41,4 +41,14 @@ module.exports = {
     fs.mkdirSync(RELEASE_DIR, { recursive: true });
     return RELEASE_DIR;
   },
+  // Wipe release/ before building a new installer
+  cleanReleaseDir() {
+    if (fs.existsSync(RELEASE_DIR)) {
+      for (const f of fs.readdirSync(RELEASE_DIR)) {
+        fs.rmSync(path.join(RELEASE_DIR, f), { recursive: true, force: true });
+      }
+    }
+    fs.mkdirSync(RELEASE_DIR, { recursive: true });
+    return RELEASE_DIR;
+  },
 };
