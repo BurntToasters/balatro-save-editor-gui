@@ -28,9 +28,19 @@
     "dist:win": "node build-scripts/installer-nsis.js",
     "dist:linux": "node build-scripts/installer-appimage.js",
     "sign:mac": "dotenv -e .env -- node build-scripts/mac-sign.js",
-    "notarize:mac": "dotenv -e .env -- node build-scripts/mac-notarize.js"
+    "notarize:mac": "dotenv -e .env -- node build-scripts/mac-notarize.js",
+    "sign:gpg": "dotenv -e .env -- node build-scripts/gpg-sign.js",
+    "publish": "dotenv -e .env -- node build-scripts/publish.js",
+    "publish:dry": "node build-scripts/publish.js --dry-run",
+    "release:mac": "npm run build && npm run sign:mac && npm run dist:mac && npm run notarize:mac && npm run sign:gpg && npm run publish",
+    "release:mac:universal": "cross-env BALATRO_MAC_ARCH=universal2 BALATRO_ARCH=universal npm run release:mac",
+    "release:win": "npm run build && npm run dist:win && npm run sign:gpg && npm run publish",
+    "release:linux": "npm run build && npm run dist:linux && npm run sign:gpg && npm run publish",
+    "bump": "node build-scripts/bump-version.js",
+    "clean": "node build-scripts/clean.js"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "dotenv-cli": "^11.0.0"
   },
   "repository": {
