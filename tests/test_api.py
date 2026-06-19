@@ -140,3 +140,53 @@ def test_get_licenses_missing_is_graceful(monkeypatch, tmp_path):
     monkeypatch.setattr(resources, 'licenses_path', lambda: str(tmp_path / 'nope.json'))
     out = Api().get_licenses()
     assert out == {'app': None, 'entries': []}
+
+
+def test_joker_catalog():
+    cat = Api().joker_catalog()
+    assert len(cat) == 150
+    assert {'key', 'name', 'rarity'} <= set(cat[0])
+
+
+def test_get_jokers_requires_load():
+    assert Api().get_jokers()['ok'] is False
+
+
+def test_get_jokers_after_load(sample_save):
+    api = Api()
+    api.load_save(str(sample_save))
+    res = api.get_jokers()
+    assert res['ok'] is True
+    assert len(res['jokers']) == 2
+
+
+def test_joker_add_and_edition_via_api(sample_save):
+    api = Api()
+    api.load_save(str(sample_save))
+    res = api.joker_add('j_blueprint', 'Blueprint')
+    assert res['ok'] is True
+    assert len(res['jokers']) == 3
+    assert res['jokers'][-1]['center'] == 'j_blueprint'
+
+    res = api.joker_set_edition(0, 'foil')
+    assert res['jokers'][0]['edition'] == 'foil'
+
+
+def test_joker_delete_via_api(sample_save):
+    api = Api()
+    api.load_save(str(sample_save))
+    res = api.joker_delete(0)
+    assert len(res['jokers']) == 1
+
+
+def test_joker_edits_persist_through_save(sample_save):
+    api = Api()
+    api.load_save(str(sample_save))
+    api.joker_add('j_dna', 'DNA')
+    assert api.save(create_backup=False)['ok'] is True
+
+    fresh = Api()
+    fresh.load_save(str(sample_save))
+    jokers = fresh.get_jokers()['jokers']
+    assert len(jokers) == 3
+    assert jokers[-1]['center'] == 'j_dna'

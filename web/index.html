@@ -82,6 +82,25 @@
       </section>
     </main>
 
+    <section id="jokers-panel" class="jokers" hidden>
+      <div class="jokers-head">
+        <h2>Jokers <span id="joker-count" class="muted"></span></h2>
+        <button id="jokers-save" class="primary" disabled>Save jokers to disk</button>
+      </div>
+      <p class="warn">
+        <b>Warning:</b> changing a joker's type or adding a joker is experimental and will most
+        likely break this save — the run may fail to load. Editing edition, stickers and sell value
+        on existing jokers is safe. A backup is written before saving.
+      </p>
+      <div id="joker-list"></div>
+      <div class="joker-add">
+        <label class="j-field"><span>Add joker</span>
+          <select id="joker-add-select"></select>
+        </label>
+        <button id="joker-add-btn" class="danger">Add joker (experimental)</button>
+      </div>
+    </section>
+
     <footer class="actions">
       <label class="toggle backup">
         <input type="checkbox" id="backup" checked />

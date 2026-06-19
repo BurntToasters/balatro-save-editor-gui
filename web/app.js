@@ -27,6 +27,7 @@ function renderState(state) {
   $('save').disabled = !loaded;
   if (!loaded) {
     $('save-path').textContent = '';
+    $('jokers-panel').hidden = true;
     return;
   }
   currentPath = state.save_path;
@@ -80,6 +81,7 @@ async function loadPath(path) {
     return;
   }
   renderState(res.state);
+  await loadJokers();
   setStatus(`Loaded ${res.state.profile}.`, 'ok');
 }
 
@@ -203,6 +205,188 @@ function closeLicenses() {
   $('licenses-modal').hidden = true;
 }
 
+// ---- jokers ----
+
+const EDITION_OPTS = [
+  ['', 'None'],
+  ['foil', 'Foil'],
+  ['holo', 'Holographic'],
+  ['polychrome', 'Polychrome'],
+  ['negative', 'Negative'],
+];
+const RARITY_NAMES = { 1: 'Common', 2: 'Uncommon', 3: 'Rare', 4: 'Legendary' };
+let CATALOG = [];
+
+const escapeHtml = (s) =>
+  String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const escapeAttr = (s) =>
+  String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+const nameForKey = (key) => (CATALOG.find((c) => c.key === key) || {}).name || key;
+
+function catalogOptionsHtml() {
+  const groups = { 1: [], 2: [], 3: [], 4: [] };
+  for (const j of CATALOG) (groups[j.rarity] || (groups[j.rarity] = [])).push(j);
+  let html = '';
+  for (const r of [1, 2, 3, 4]) {
+    if (!groups[r] || !groups[r].length) continue;
+    html += `<optgroup label="${RARITY_NAMES[r] || 'Rarity ' + r}">`;
+    for (const j of groups[r]) html += `<option value="${escapeAttr(j.key)}">${escapeHtml(j.name)}</option>`;
+    html += '</optgroup>';
+  }
+  return html;
+}
+
+function labeled(text, control) {
+  const l = document.createElement('label');
+  l.className = 'j-field';
+  const s = document.createElement('span');
+  s.textContent = text;
+  l.append(s, control);
+  return l;
+}
+
+function buildJokerRow(j) {
+  const row = document.createElement('div');
+  row.className = 'joker-row';
+
+  const main = document.createElement('div');
+  main.className = 'joker-main';
+  const nm = document.createElement('span');
+  nm.className = 'joker-name';
+  nm.textContent = j.name || j.center || `Joker ${j.index + 1}`;
+  const ct = document.createElement('span');
+  ct.className = 'joker-center muted';
+  ct.textContent = j.center || '';
+  main.append(nm, ct);
+  row.appendChild(main);
+
+  const ctrls = document.createElement('div');
+  ctrls.className = 'joker-ctrls';
+
+  const typeSel = document.createElement('select');
+  typeSel.className = 'j-type';
+  typeSel.innerHTML = catalogOptionsHtml();
+  if (j.center && !CATALOG.some((c) => c.key === j.center)) {
+    const o = document.createElement('option');
+    o.value = j.center;
+    o.textContent = j.center;
+    typeSel.prepend(o);
+  }
+  if (j.center) typeSel.value = j.center;
+  typeSel.addEventListener('change', async () => {
+    applyJokerResult(await api().joker_set_type(j.index, typeSel.value, nameForKey(typeSel.value)));
+  });
+  ctrls.append(labeled('Type', typeSel));
+
+  const edSel = document.createElement('select');
+  edSel.className = 'j-edition';
+  for (const [val, label] of EDITION_OPTS) {
+    const o = document.createElement('option');
+    o.value = val;
+    o.textContent = label;
+    edSel.appendChild(o);
+  }
+  edSel.value = j.edition || '';
+  edSel.addEventListener('change', async () => {
+    applyJokerResult(await api().joker_set_edition(j.index, edSel.value));
+  });
+  ctrls.append(labeled('Edition', edSel));
+
+  const stickers = document.createElement('span');
+  stickers.className = 'j-stickers';
+  for (const s of ['eternal', 'perishable', 'rental']) {
+    const lbl = document.createElement('label');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = (j.stickers || []).includes(s);
+    cb.addEventListener('change', async () => {
+      applyJokerResult(await api().joker_set_sticker(j.index, s, cb.checked));
+    });
+    lbl.append(cb, document.createTextNode(' ' + capitalize(s)));
+    stickers.appendChild(lbl);
+  }
+  ctrls.append(labeled('Stickers', stickers));
+
+  const sell = document.createElement('input');
+  sell.type = 'number';
+  sell.min = '0';
+  sell.className = 'j-sell';
+  if (j.sell_cost != null) sell.value = j.sell_cost;
+  sell.addEventListener('change', async () => {
+    applyJokerResult(await api().joker_set_sell(j.index, Number(sell.value)));
+  });
+  ctrls.append(labeled('Sell', sell));
+
+  row.appendChild(ctrls);
+
+  const acts = document.createElement('div');
+  acts.className = 'joker-acts';
+  const dup = document.createElement('button');
+  dup.className = 'ghost';
+  dup.textContent = 'Duplicate';
+  dup.addEventListener('click', async () => applyJokerResult(await api().joker_duplicate(j.index)));
+  const del = document.createElement('button');
+  del.className = 'danger';
+  del.textContent = 'Delete';
+  del.addEventListener('click', async () => applyJokerResult(await api().joker_delete(j.index)));
+  acts.append(dup, del);
+  row.appendChild(acts);
+
+  return row;
+}
+
+function renderJokers(jokers) {
+  const list = $('joker-list');
+  list.textContent = '';
+  $('joker-count').textContent = `(${jokers.length})`;
+  if (!jokers.length) {
+    const p = document.createElement('p');
+    p.className = 'muted';
+    p.textContent = 'No jokers in this save.';
+    list.appendChild(p);
+  }
+  for (const j of jokers) list.appendChild(buildJokerRow(j));
+}
+
+function applyJokerResult(res) {
+  if (!res || !res.ok) {
+    setStatus((res && res.error) || 'Joker edit failed.', 'error');
+    return;
+  }
+  renderJokers(res.jokers);
+  setStatus('Joker changed — not saved yet. Use "Save jokers to disk".', '');
+}
+
+async function loadJokers() {
+  const res = await api().get_jokers();
+  const ok = !!(res && res.ok);
+  $('jokers-panel').hidden = !ok;
+  if (ok) {
+    renderJokers(res.jokers);
+    $('jokers-save').disabled = false;
+  }
+}
+
+async function saveJokers() {
+  if (!currentPath) {
+    setStatus('No save loaded.', 'error');
+    return;
+  }
+  $('jokers-save').disabled = true;
+  setStatus('Saving jokers…');
+  const backup = $('backup').checked;
+  const sv = await api().save(backup);
+  if (!sv.ok) {
+    setStatus(sv.error, 'error');
+    $('jokers-save').disabled = false;
+    return;
+  }
+  renderState(sv.state);
+  await loadJokers();
+  setStatus('Jokers saved.' + (backup ? ' A backup was created.' : ''), 'ok');
+}
+
 window.addEventListener('pywebviewready', async () => {
   $('open').addEventListener('click', async () => {
     const path = await api().pick_file();
@@ -218,6 +402,18 @@ window.addEventListener('pywebviewready', async () => {
     if (e.target.value) loadPath(e.target.value);
   });
   $('save').addEventListener('click', applyAndSave);
+
+  try {
+    CATALOG = await api().joker_catalog();
+    $('joker-add-select').innerHTML = catalogOptionsHtml();
+  } catch {
+    /* catalog unavailable */
+  }
+  $('jokers-save').addEventListener('click', saveJokers);
+  $('joker-add-btn').addEventListener('click', async () => {
+    const key = $('joker-add-select').value;
+    if (key) applyJokerResult(await api().joker_add(key, nameForKey(key)));
+  });
 
   $('licenses-btn').addEventListener('click', openLicenses);
   $('licenses-close').addEventListener('click', closeLicenses);
