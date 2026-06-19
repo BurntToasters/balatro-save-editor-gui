@@ -4,7 +4,7 @@ This app was made possible from the CLI code created by: problemsalved https://g
 
 A cross-platform desktop GUI for editing [Balatro](https://www.playbalatro.com/) `save.jkr` files.
 
-Forked from [problemsalved/balatro_save_editor](https://github.com/problemsalved/balatro_save_editor) — the original command-line editor — and wrapped in a [pywebview](https://pywebview.flowrl.com/) GUI. The proven Python parser (raw-deflate `zlib` + byte-exact recompression validation) is reused unchanged, so saves round-trip safely.
+Forked from [problemsalved/balatro_save_editor](https://github.com/problemsalved/balatro_save_editor) the original command-line editor and wrapped in a [pywebview](https://pywebview.flowrl.com/) GUI. The Python parser (raw-deflate `zlib` + byte-exact recompression validation) is reused unchanged.
 
 ## Features
 

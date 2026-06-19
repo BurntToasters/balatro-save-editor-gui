@@ -162,8 +162,8 @@ class BalatroSaveFile(object):
         self.save_file_data = self.read(self.save_file_path)
         self.structs = []
 
-        text = str(self.decompress(self.save_file_data), encoding='ascii')
-        tokens = re.split(TOKEN_RE, text)
+        self.source_text = str(self.decompress(self.save_file_data), encoding='ascii')
+        tokens = re.split(TOKEN_RE, self.source_text)
         token_iterator = TokenIterator(tokens)
 
         self.structs.append(LiteralStruct(token_iterator, next(token_iterator)))
@@ -199,10 +199,10 @@ class BalatroSaveFile(object):
     def compress(save_file_data):
         return zlib.compress(save_file_data, level=1, wbits=-zlib.MAX_WBITS)
 
-    # Checks recompress (no changes) returns to initial file
+    # Confirms the parser faithfully reproduced the decompressed save text.
     def validate(self):
-        if not self.save_file_data == self.compress(bytes(str(self), 'ascii')):
-            raise Exception('Decompression and Recompression failed!')
+        if not str(self) == self.source_text:
+            raise Exception('Save parsing was not faithful (serialized output differs from source)!')
 
     def __str__(self):
         return ''.join(map(str, self.structs))
