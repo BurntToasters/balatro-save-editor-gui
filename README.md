@@ -15,6 +15,7 @@ The editor auto-detects your Balatro save and lets you toggle any of these chang
 - **Hand multipliers** – set the multiplier for every poker hand
 - **Card slot limits** – raise joker and consumable slot counts
 - **Remove "eternal"** – strip the eternal sticker from jokers
+- **[Experimental] Joker Editing** - Add/Remove/Modify jokers and their enhancements
 
 ## Supported platforms
 
