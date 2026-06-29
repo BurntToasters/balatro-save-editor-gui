@@ -8,7 +8,16 @@
   "desktopName": "com.burnttoasters.balatrosaveeditor.desktop",
   "keywords": [
     "balatro",
+    "balatro-save-editor",
+    "balatro-save-file",
+    "balatro-save-jkr",
+    "balatro-joker-editor",
     "save-editor",
+    "game-save-editor",
+    "desktop-app",
+    "windows",
+    "macos",
+    "linux",
     "pywebview",
     "cross-platform"
   ],
