@@ -1,15 +1,18 @@
 # Releasing
 
 Builds are per-platform: run the matching command on a machine of that OS/arch
-(PyInstaller cannot cross-compile). All commands read secrets from `.env`
-(copy `.env.example`).
+(PyInstaller cannot cross-compile). Signing secrets come from `.env` (copy
+`.env.example`); GitHub access comes from the GitHub CLI's stored login.
 
 ## One-time setup
 
 - `npm run venv` and `npm install`
 - `.env` filled in (see `.env.example`)
+- [GitHub CLI](https://cli.github.com/) installed and signed in on each release
+  machine: `gh auth login`. `GH_TOKEN` / `GITHUB_TOKEN` are ignored by `publish`.
 - A GPG secret key (`GPG_KEY_ID`)
-- macOS: a "Developer ID Application" cert in the keychain; notarytool credentials
+- macOS: an Apple Silicon Mac with a native arm64 Python (Intel Macs aren't supported);
+  a "Developer ID Application" cert in the keychain; notarytool credentials
 - Windows: [NSIS](https://nsis.sourceforge.io/) (`makensis` on PATH)
 - Linux: `appimagetool` on PATH
 
@@ -24,8 +27,7 @@ Updates `package.json` and `app/__init__.py`. The release tag is `v<version>`.
 ## Release per platform
 
 ```bash
-npm run release:mac            # native arch
-npm run release:mac:universal  # universal2 (needs a universal2 Python)
+npm run release:mac     # Apple Silicon (arm64)
 npm run release:win
 npm run release:linux
 ```
@@ -72,5 +74,6 @@ macOS notarization: `xcrun stapler validate <installer>.dmg`
 
 ```bash
 npm run publish:dry   # show repo/tag/assets without uploading
+npm run test:scripts  # unit tests for the release helpers
 npm run clean         # remove build/ dist/ release/
 ```

@@ -2,18 +2,16 @@
 
 // Creates (or reuses) a draft GitHub release for v<version> and uploads every
 // file in release/ (installers + .asc signatures + SHA256SUMS-*.txt).
-// Env (via `dotenv -e .env --`): GH_TOKEN.
+// Auth: the GitHub CLI's stored login (`gh auth login`); no token in .env.
 
 const fs = require('node:fs');
-const https = require('node:https');
 const path = require('node:path');
 const { RELEASE_DIR, pkg, version } = require('./pkg');
+const { assertGitHubCliAuthenticated, githubApi, uploadReleaseAsset } = require('./github-cli');
 
 const dryRun = process.argv.includes('--dry-run');
-const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
 const tag = `v${version}`;
 
-const TIMEOUT_MS = Number.parseInt(process.env.GH_REQUEST_TIMEOUT_MS || '30000', 10);
 const RETRIES = Number.parseInt(process.env.GH_REQUEST_RETRIES || '3', 10);
 const RETRY_DELAY_MS = Number.parseInt(process.env.GH_REQUEST_RETRY_DELAY_MS || '1500', 10);
 
@@ -39,80 +37,25 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function isRetryable(err) {
   if (!err) return false;
   const codes = new Set([408, 409, 425, 429, 500, 502, 503, 504]);
-  const errnos = new Set(['ETIMEDOUT', 'ECONNRESET', 'ENOTFOUND', 'EAI_AGAIN', 'ECONNREFUSED', 'EPIPE']);
   if (typeof err.statusCode === 'number' && codes.has(err.statusCode)) return true;
-  if (typeof err.code === 'string' && errnos.has(err.code)) return true;
   const m = String(err.message || '').toLowerCase();
-  return m.includes('timeout') || m.includes('socket hang up') || m.includes('aborted');
-}
-
-function authHeaders(extra = {}) {
-  return {
-    Authorization: `Bearer ${token}`,
-    'User-Agent': 'balatro-save-editor-release',
-    Accept: 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28',
-    ...extra,
-  };
-}
-
-function rawRequest(options, body) {
-  return new Promise((resolve, reject) => {
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.setEncoding('utf8');
-      res.on('data', (c) => (data += c));
-      res.on('end', () => {
-        const status = res.statusCode || 0;
-        if (status >= 200 && status < 300) {
-          resolve(data ? JSON.parse(data) : {});
-        } else {
-          const err = new Error(`${options.method} ${options.path} -> ${status}: ${data.slice(0, 300)}`);
-          err.statusCode = status;
-          reject(err);
-        }
-      });
-    });
-    req.setTimeout(TIMEOUT_MS, () => {
-      const err = new Error(`timeout ${options.method} ${options.path}`);
-      err.code = 'ETIMEDOUT';
-      req.destroy(err);
-    });
-    req.on('error', reject);
-    if (body) req.write(body);
-    req.end();
-  });
+  return ['timeout', 'timed out', 'connection reset', 'eof', 'tls handshake', 'no such host'].some((s) => m.includes(s));
 }
 
 async function withRetry(fn, label) {
   for (let attempt = 1; attempt <= Math.max(1, RETRIES); attempt++) {
     try {
-      return await fn();
+      return fn();
     } catch (err) {
       if (attempt >= RETRIES || !isRetryable(err)) throw err;
       const delay = RETRY_DELAY_MS * attempt;
-      console.warn(`retry ${label} ${attempt}/${RETRIES - 1} in ${delay}ms (${err.message})`);
+      console.warn(`retry ${label} ${attempt}/${RETRIES - 1} in ${delay}ms (${err.message.split('\n')[0]})`);
       await sleep(delay);
     }
   }
 }
 
-function api(method, apiPath, body) {
-  const data = body ? Buffer.from(JSON.stringify(body)) : null;
-  return withRetry(
-    () =>
-      rawRequest(
-        {
-          method,
-          hostname: 'api.github.com',
-          path: apiPath,
-          headers: authHeaders(data ? { 'Content-Type': 'application/json', 'Content-Length': data.length } : {}),
-        },
-        data,
-      ),
-    `${method} ${apiPath}`,
-  );
-}
+const api = (method, endpoint, body) => withRetry(() => githubApi(method, endpoint, body), `${method} ${endpoint}`);
 
 // Draft releases are NOT found by tag (no git ref yet); search the list too.
 async function getOrCreateRelease() {
@@ -145,50 +88,9 @@ async function deleteAssetIfExists(release, name) {
   if (existing) await api('DELETE', `/repos/${owner}/${repo}/releases/assets/${existing.id}`);
 }
 
-function contentType(name) {
-  return name.endsWith('.asc') || name.endsWith('.txt') ? 'text/plain' : 'application/octet-stream';
-}
-
-function uploadOnce(release, name) {
-  const file = path.join(RELEASE_DIR, name);
-  const size = fs.statSync(file).size;
-  const url = new URL(release.upload_url.replace('{?name,label}', ''));
-  url.searchParams.set('name', name);
-  return new Promise((resolve, reject) => {
-    const req = https.request(
-      {
-        method: 'POST',
-        hostname: url.hostname,
-        path: url.pathname + url.search,
-        headers: authHeaders({ 'Content-Type': contentType(name), 'Content-Length': size }),
-      },
-      (res) => {
-        let data = '';
-        res.on('data', (c) => (data += c));
-        res.on('end', () => {
-          const status = res.statusCode || 0;
-          if (status >= 200 && status < 300) resolve();
-          else {
-            const err = new Error(`upload ${name} -> ${status}: ${data.slice(0, 200)}`);
-            err.statusCode = status;
-            reject(err);
-          }
-        });
-      },
-    );
-    req.setTimeout(TIMEOUT_MS, () => {
-      const err = new Error(`upload timeout ${name}`);
-      err.code = 'ETIMEDOUT';
-      req.destroy(err);
-    });
-    req.on('error', reject);
-    fs.createReadStream(file).pipe(req);
-  });
-}
-
 async function uploadAsset(release, name) {
   await deleteAssetIfExists(release, name);
-  await withRetry(() => uploadOnce(release, name), `upload ${name}`);
+  await withRetry(() => uploadReleaseAsset(release.upload_url, path.join(RELEASE_DIR, name)), `upload ${name}`);
 }
 
 async function main() {
@@ -205,11 +107,7 @@ async function main() {
     return;
   }
 
-  if (!token) {
-    console.error('Set GH_TOKEN in .env');
-    process.exit(1);
-  }
-
+  assertGitHubCliAuthenticated();
   const release = await getOrCreateRelease();
   for (const name of assets) {
     await uploadAsset(release, name);
