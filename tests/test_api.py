@@ -190,3 +190,39 @@ def test_joker_edits_persist_through_save(sample_save):
     jokers = fresh.get_jokers()['jokers']
     assert len(jokers) == 3
     assert jokers[-1]['center'] == 'j_dna'
+
+
+class FakeWindow:
+    def __init__(self, answer=True):
+        self.answer = answer
+        self.shown = False
+        self.asked = None
+
+    def show(self):
+        self.shown = True
+
+    def create_confirmation_dialog(self, title, message):
+        self.asked = (title, message)
+        return self.answer
+
+
+def test_ui_ready_shows_window():
+    win = FakeWindow()
+    assert Api(win).ui_ready() is True
+    assert win.shown is True
+    assert Api().ui_ready() is True
+
+
+def test_confirm_uses_native_dialog():
+    win = FakeWindow(answer=False)
+    assert Api(win).confirm('T', 'M') is False
+    assert win.asked == ('T', 'M')
+    assert Api(FakeWindow(answer=True)).confirm('T', 'M') is True
+    assert Api().confirm('T', 'M') is True
+
+
+def test_app_info(monkeypatch):
+    monkeypatch.setattr(resources, 'load_licenses', lambda: {'app': {'version': '9.9.9'}, 'entries': []})
+    assert Api(debug=True).app_info() == {'version': '9.9.9', 'debug': True}
+    monkeypatch.setattr(resources, 'load_licenses', lambda: {'app': None, 'entries': []})
+    assert Api().app_info() == {'version': None, 'debug': False}

@@ -28,8 +28,22 @@ def test_main_wires_window(monkeypatch):
     assert captured['url'] == main_module.index_html()
     assert isinstance(captured['js_api'], Api)
     assert captured['js_api']._window is fake_window
-    assert captured['kwargs']['min_size'] == (720, 560)
+    assert captured['kwargs']['min_size'] == (760, 560)
+    assert captured['kwargs']['hidden'] is True
     assert started.get('called') is True
+    assert started['func'] is main_module._show_fallback
+    assert started['args'] == (fake_window,)
+
+
+def test_show_fallback_shows_window():
+    shown = []
+
+    class FakeWindow:
+        def show(self):
+            shown.append(True)
+
+    main_module._show_fallback(FakeWindow(), delay=0)
+    assert shown == [True]
 
 
 def test_debug_env_enables_debug(monkeypatch):
@@ -39,3 +53,12 @@ def test_debug_env_enables_debug(monkeypatch):
     monkeypatch.setattr(main_module.webview, 'start', lambda **k: rec.update(k))
     main_module.main()
     assert rec.get('debug') is True
+
+
+def test_debug_passed_to_api(monkeypatch):
+    monkeypatch.setenv('BALATRO_EDITOR_DEBUG', '1')
+    rec = {}
+    monkeypatch.setattr(main_module.webview, 'create_window', lambda *a, **k: rec.update(k) or object())
+    monkeypatch.setattr(main_module.webview, 'start', lambda **k: None)
+    main_module.main()
+    assert rec['js_api'].app_info()['debug'] is True

@@ -5,12 +5,30 @@ from .editor import BalatroSaveEditor, JokerEditor, joker_catalog
 class Api:
     """Bridge exposed to the web frontend via pywebview."""
 
-    def __init__(self, window=None):
+    def __init__(self, window=None, debug=False):
         self._window = window
+        self._debug = debug
         self.editor = None
         self.save_path = None
 
+    # ---- window ----
+
+    def ui_ready(self):
+        # Window starts hidden so the first paint isn't a csgo flashbang.
+        if self._window is not None:
+            self._window.show()
+        return True
+
+    def confirm(self, title, message):
+        if self._window is None:
+            return True
+        return bool(self._window.create_confirmation_dialog(str(title), str(message)))
+
     # ---- info ----
+
+    def app_info(self):
+        app = resources.load_licenses().get('app') or {}
+        return {'version': app.get('version'), 'debug': self._debug}
 
     def get_licenses(self):
         return resources.load_licenses()

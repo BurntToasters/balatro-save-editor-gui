@@ -3,130 +3,137 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
     <title>Balatro Save Editor</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <header class="topbar">
-      <h1>Balatro Save Editor</h1>
-      <div class="save-bar">
-        <select id="profile" title="Save profile"></select>
-        <button id="open" class="ghost">Open…</button>
-        <button id="reload" class="ghost">Reload</button>
+    <header class="toolbar">
+      <div class="toolbar-row">
+        <select id="profile" title="Save file"></select>
+        <button id="open">Open…</button>
+        <button id="reload" disabled>Reload</button>
       </div>
-      <p id="save-path" class="path"></p>
+      <div id="save-path" class="path selectable"></div>
     </header>
 
-    <main id="presets">
-      <section class="preset" data-key="money">
-        <label class="toggle">
-          <input type="checkbox" id="en-money" />
-          <span>Money</span>
-        </label>
-        <div class="body">
-          <p class="current">Current: <b id="cur-money">—</b></p>
-          <label class="field">Set to
-            <input type="number" id="val-money" min="0" step="1" placeholder="19999" />
-          </label>
+    <nav class="sidebar" id="nav">
+      <button class="nav-item active" data-target="sec-run">Run</button>
+      <button class="nav-item" data-target="sec-jokers">Jokers</button>
+      <button class="nav-item" data-target="sec-about">About</button>
+    </nav>
+
+    <main class="content" id="content">
+      <section id="sec-run" class="section">
+        <h2>Run</h2>
+        <fieldset id="run-set" class="group" disabled>
+          <div class="row" data-preset="money">
+            <input type="checkbox" id="en-money" />
+            <label class="row-text" for="en-money">
+              <span class="row-title">Money</span>
+              <span class="row-sub">Current: <b id="cur-money">—</b></span>
+            </label>
+            <div class="row-ctrl">
+              <input type="number" id="val-money" data-toggle="en-money" min="0" step="1" placeholder="19999" />
+            </div>
+          </div>
+
+          <div class="row" data-preset="chips">
+            <input type="checkbox" id="en-chips" />
+            <label class="row-text" for="en-chips">
+              <span class="row-title">Beat current blind</span>
+              <span class="row-sub">Sets chips to one below the blind target (<b id="cur-blind">—</b>)</span>
+            </label>
+          </div>
+
+          <div class="row" data-preset="multipliers">
+            <input type="checkbox" id="en-mult" />
+            <label class="row-text" for="en-mult">
+              <span class="row-title">Hand multipliers</span>
+              <span class="row-sub">Current: <b id="cur-mult">—</b></span>
+            </label>
+            <div class="row-ctrl">
+              <input type="number" id="val-mult" data-toggle="en-mult" min="1" step="1" value="10000" />
+            </div>
+          </div>
+
+          <div class="row" data-preset="card_limits">
+            <input type="checkbox" id="en-limits" />
+            <label class="row-text" for="en-limits">
+              <span class="row-title">Card slot limits</span>
+              <span class="row-sub">Current: jokers <b id="cur-jokers">—</b>, consumables <b id="cur-cons">—</b></span>
+            </label>
+            <div class="row-ctrl">
+              <label class="mini">Jokers
+                <input type="number" id="val-jokers" data-toggle="en-limits" min="0" step="1" value="20" />
+              </label>
+              <label class="mini">Consumables
+                <input type="number" id="val-cons" data-toggle="en-limits" min="0" step="1" value="10" />
+              </label>
+            </div>
+          </div>
+
+          <div class="row" data-preset="strip_eternal">
+            <input type="checkbox" id="en-eternal" />
+            <label class="row-text" for="en-eternal">
+              <span class="row-title">Remove Eternal from all jokers</span>
+              <span class="row-sub"><b id="cur-eternal">0</b> eternal joker(s) in this save</span>
+            </label>
+          </div>
+        </fieldset>
+      </section>
+
+      <section id="sec-jokers" class="section">
+        <div class="section-head">
+          <h2>Jokers <span id="joker-count" class="muted"></span></h2>
+          <fieldset id="joker-add-set" class="inline" disabled>
+            <select id="joker-add-select" title="Joker to add"></select>
+            <button id="joker-add-btn">Add</button>
+          </fieldset>
+        </div>
+        <div id="joker-list" class="group">
+          <p class="empty">No save loaded.</p>
         </div>
       </section>
 
-      <section class="preset" data-key="chips">
-        <label class="toggle">
-          <input type="checkbox" id="en-chips" />
-          <span>Beat current blind</span>
-        </label>
-        <div class="body">
-          <p class="current">Blind target: <b id="cur-blind">—</b></p>
-          <p class="hint">Sets your chips to one below the blind target.</p>
-        </div>
-      </section>
-
-      <section class="preset" data-key="multipliers">
-        <label class="toggle">
-          <input type="checkbox" id="en-mult" />
-          <span>Hand multipliers</span>
-        </label>
-        <div class="body">
-          <p class="current">Current: <b id="cur-mult">—</b></p>
-          <label class="field">Set all hands to
-            <input type="number" id="val-mult" min="1" step="1" value="10000" />
-          </label>
-        </div>
-      </section>
-
-      <section class="preset" data-key="card_limits">
-        <label class="toggle">
-          <input type="checkbox" id="en-limits" />
-          <span>Card slot limits</span>
-        </label>
-        <div class="body">
-          <p class="current">Current: jokers <b id="cur-jokers">—</b>, consumables <b id="cur-cons">—</b></p>
-          <label class="field">Jokers
-            <input type="number" id="val-jokers" min="0" step="1" value="20" />
-          </label>
-          <label class="field">Consumables
-            <input type="number" id="val-cons" min="0" step="1" value="10" />
-          </label>
-        </div>
-      </section>
-
-      <section class="preset" data-key="strip_eternal">
-        <label class="toggle">
-          <input type="checkbox" id="en-eternal" />
-          <span>Remove "eternal" from jokers</span>
-        </label>
-        <div class="body">
-          <p class="current"><b id="cur-eternal">0</b> eternal joker(s) in this save</p>
+      <section id="sec-about" class="section">
+        <h2>About</h2>
+        <div class="group">
+          <div class="row">
+            <div class="row-text">
+              <span class="row-title">Balatro Save Editor <span id="app-version" class="muted"></span></span>
+              <span class="row-sub">
+                Forked from
+                <a href="#" data-url="https://github.com/problemsalved/balatro_save_editor">problemsalved/balatro_save_editor</a>
+                · MPL-2.0
+              </span>
+            </div>
+            <div class="row-ctrl">
+              <button data-url="https://github.com/BurntToasters/balatro-save-editor-gui">Source</button>
+              <button id="licenses-btn">Licenses</button>
+            </div>
+          </div>
         </div>
       </section>
     </main>
 
-    <section id="jokers-panel" class="jokers" hidden>
-      <div class="jokers-head">
-        <h2>Jokers <span id="joker-count" class="muted"></span></h2>
-        <button id="jokers-save" class="primary" disabled>Save jokers to disk</button>
-      </div>
-      <p class="warn">
-        <b>Warning:</b> changing a joker's type or adding a joker is experimental and will most
-        likely break this save — the run may fail to load. Editing edition, stickers and sell value
-        on existing jokers is safe. A backup is written before saving.
-      </p>
-      <div id="joker-list"></div>
-      <div class="joker-add">
-        <label class="j-field"><span>Add joker</span>
-          <select id="joker-add-select"></select>
-        </label>
-        <button id="joker-add-btn" class="danger">Add joker (experimental)</button>
-      </div>
-    </section>
-
-    <footer class="actions">
-      <label class="toggle backup">
+    <footer class="statusbar">
+      <span id="status" class="status" role="status"></span>
+      <span id="dirty" class="dirty" hidden>Unsaved changes</span>
+      <label class="check">
         <input type="checkbox" id="backup" checked />
-        <span>Back up save before writing</span>
+        Back up before saving
       </label>
-      <button id="save" class="primary" disabled>Apply &amp; Save</button>
-    </footer>
-
-    <div id="status" class="status" role="status"></div>
-
-    <footer class="credits">
-      <span>
-        Forked from
-        <a href="#" data-url="https://github.com/problemsalved/balatro_save_editor">problemsalved/balatro_save_editor</a>
-        · MPL-2.0
-      </span>
-      <button id="licenses-btn" class="link">Licenses</button>
+      <button id="save" class="primary" disabled>Save</button>
     </footer>
 
     <div id="licenses-modal" class="modal" hidden>
-      <div class="modal-card">
-        <div class="modal-head">
-          <h2>Open-source licenses</h2>
-          <button id="licenses-close" class="ghost">Close</button>
+      <div class="sheet" role="dialog" aria-labelledby="licenses-title">
+        <div class="sheet-head">
+          <h2 id="licenses-title">Open-source licenses</h2>
+          <button id="licenses-close">Close</button>
         </div>
-        <div id="licenses-body" class="modal-body"></div>
+        <div id="licenses-body" class="sheet-body"></div>
       </div>
     </div>
 
