@@ -1,10 +1,12 @@
 # Balatro Save Editor
 
-This app was made possible from the CLI code created by: problemsalved https://github.com/problemsalved/balatro_save_editor Thank you!!
+A free desktop save editor for [Balatro](https://www.playbalatro.com/). Change your money, beat the current blind, set hand mult, raise joker and consumable slots, and edit jokers (type, edition, stickers, sell value) in your `save.jkr`. Runs on Windows, macOS (Apple Silicon) and Linux.
 
-A cross-platform desktop GUI for editing [Balatro](https://www.playbalatro.com/) `save.jkr` files.
+**[Download](https://github.com/BurntToasters/balatro-save-editor-gui/releases/latest)** · **[Website](https://bse.burnttoasters.com/)**
 
-![Balatro Save Editor](docs/img/app-run.png)
+This app was made possible by the CLI code created by [problemsalved](https://github.com/problemsalved/balatro_save_editor). Thank you!!
+
+![Balatro Save Editor window showing money, blind, hand mult, slot limit and joker options](docs/img/app-run.png)
 
 Forked from [problemsalved/balatro_save_editor](https://github.com/problemsalved/balatro_save_editor) the original command-line editor and wrapped in a [pywebview](https://pywebview.flowrl.com/) GUI. The Python parser (raw-deflate `zlib` + byte-exact recompression validation) is reused unchanged.
 
@@ -38,6 +40,14 @@ npm run venv      # create .venv and install Python deps
 npm run dev       # launch the app from source
 npm test          # run the pytest suite
 npm run smoke:gui # drive the real window against a temp save
+```
+
+The website lives in `docs/` (GitHub Pages). Its domain comes from `docs/CNAME`:
+
+```bash
+npm run site:sync    # point canonical/og/sitemap/robots/README links at the CNAME domain
+npm run site:card    # re-render docs/img/social.png (share image) with headless Chrome/Edge
+npm run test:scripts # includes a check that docs/ matches docs/CNAME
 ```
 
 ## Building

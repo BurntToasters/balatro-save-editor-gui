@@ -30,6 +30,8 @@
     "dev": "node build-scripts/venv-python.js -m app.main",
     "test": "node build-scripts/venv-python.js -m pytest",
     "test:scripts": "node --test build-scripts/*.test.js",
+    "site:sync": "node build-scripts/site-sync.js",
+    "site:card": "node build-scripts/social-card.js",
     "smoke:gui": "node build-scripts/venv-python.js build-scripts/smoke-gui.py",
     "licenses": "node build-scripts/licenses.js",
     "prebuild": "npm run licenses",
@@ -65,5 +67,5 @@
   "bugs": {
     "url": "https://github.com/BurntToasters/balatro-save-editor-gui/issues"
   },
-  "homepage": "https://github.com/BurntToasters/balatro-save-editor-gui#readme"
+  "homepage": "https://bse.burnttoasters.com/"
 }

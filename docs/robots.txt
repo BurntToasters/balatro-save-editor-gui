@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://burnttoasters.github.io/balatro-save-editor-gui/sitemap.xml
+Sitemap: https://bse.burnttoasters.com/sitemap.xml
