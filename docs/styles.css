@@ -167,7 +167,26 @@ main > section {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   padding-top: 18px;
+}
+
+.topbar-links {
+  display: flex;
+  gap: 10px;
+  flex: none;
+}
+
+/* Phones: icon-only brand so the two buttons fit on one row. */
+@media (max-width: 460px) {
+  .brand span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 
 .brand {
