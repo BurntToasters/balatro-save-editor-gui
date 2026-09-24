@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Served for any missing path, so resolve assets from the site root. Kept current by npm run site:sync. -->
+    <base href="https://bse.burnttoasters.com/" />
+    <title>Page not found — Balatro Save Editor</title>
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#1d3532" />
+    <link rel="icon" type="image/png" href="img/icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .lost {
+        margin-top: 12vh;
+        max-width: 560px;
+        padding: 28px 28px 30px;
+      }
+
+      .lost h1 {
+        font-size: clamp(2rem, 6vw, 2.8rem);
+      }
+
+      .lost p {
+        margin: 14px 0 24px;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar wrap">
+      <a class="brand" href="./">
+        <img src="img/icon.png" alt="" width="32" height="32" />
+        <span>Balatro Save Editor</span>
+      </a>
+    </header>
+    <main class="wrap">
+      <section class="panel lost">
+        <h1>Busted</h1>
+        <p>That page isn't in the deck. It may have moved, or the link is wrong.</p>
+        <a class="btn btn-red" href="./">Back to the editor</a>
+      </section>
+    </main>
+  </body>
+</html>

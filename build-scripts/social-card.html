@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<!-- Source for docs/img/social.png (1280×640). Rendered by: npm run site:card -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500&display=block" rel="stylesheet" />
+    <link rel="stylesheet" href="../docs/styles.css" />
+    <style>
+      html,
+      body {
+        width: 1280px;
+        height: 640px;
+        margin: 0;
+        overflow: hidden;
+      }
+
+      .card {
+        display: grid;
+        grid-template-columns: 560px 1fr;
+        height: 100%;
+        padding: 64px 0 64px 72px;
+        gap: 48px;
+        align-items: center;
+      }
+
+      .brand {
+        font-size: 1.6rem;
+        gap: 14px;
+      }
+
+      h1 {
+        margin: 28px 0 18px;
+        font-size: 5rem;
+        line-height: 1;
+      }
+
+      .tag {
+        margin: 0 0 30px;
+        font-size: 1.7rem;
+        line-height: 1.4;
+        color: var(--muted);
+      }
+
+      .chips {
+        justify-content: flex-start;
+        gap: 10px;
+      }
+
+      .pill {
+        font-size: 1.7rem;
+        padding: 6px 16px 4px;
+      }
+
+      .x {
+        font-size: 1.8rem;
+      }
+
+      .domain {
+        margin-top: 36px;
+        font: 500 1.35rem var(--pixel);
+        color: var(--gold);
+      }
+
+      .shot {
+        width: 760px;
+        margin-right: -120px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div>
+        <div class="brand"><img src="../docs/img/icon.png" alt="" width="52" height="52" />Free and open source</div>
+        <h1>Balatro<br />Save Editor</h1>
+        <p class="tag">Money, blinds, hand mult, slot limits and jokers. Windows, macOS, Linux.</p>
+        <div class="chips">
+          <span class="pill gold">$19,999</span>
+          <span class="pill blue">Chips</span><span class="x">×</span><span class="pill red">10,000</span>
+        </div>
+        <div class="domain" id="domain"></div>
+      </div>
+      <figure class="shot"><img src="../docs/img/app-run.png" alt="" width="984" height="661" /></figure>
+    </div>
+    <script>
+      document.getElementById('domain').textContent = new URLSearchParams(location.search).get('domain') || '';
+    </script>
+  </body>
+</html>
