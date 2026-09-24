@@ -122,6 +122,13 @@ def curated_entries():
                     'license. See https://github.com/pyinstaller/pyinstaller/blob/develop/COPYING.txt',
         },
         {
+            'name': 'Pixelify Sans (font)',
+            'version': '',
+            'license': 'OFL-1.1',
+            'url': 'https://github.com/eifetx/Pixelify-Sans',
+            'text': read_file(os.path.join(ROOT, 'web', 'fonts', 'OFL.txt')),
+        },
+        {
             'name': 'Balatro save editor (original)',
             'version': '',
             'license': 'No upstream license file',

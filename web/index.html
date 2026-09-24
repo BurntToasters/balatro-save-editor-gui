@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-ui="themed">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
     <title>Balatro Save Editor</title>
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="themed.css" />
   </head>
   <body>
     <header class="toolbar">
@@ -21,6 +22,13 @@
       <button class="nav-item active" data-target="sec-run">Run</button>
       <button class="nav-item" data-target="sec-jokers">Jokers</button>
       <button class="nav-item" data-target="sec-about">About</button>
+      <div class="sidebar-foot">
+        <div class="seg" role="group" aria-label="Interface style">
+          <button type="button" data-ui-choice="flat" aria-pressed="false">Flat</button>
+          <button type="button" data-ui-choice="themed" aria-pressed="true">Themed</button>
+        </div>
+        <button type="button" id="settings-btn" class="side-btn">Settings</button>
+      </div>
     </nav>
 
     <main class="content" id="content">
@@ -87,7 +95,7 @@
         <div class="section-head">
           <h2>Jokers <span id="joker-count" class="muted"></span></h2>
           <fieldset id="joker-add-set" class="inline" disabled>
-            <select id="joker-add-select" title="Joker to add"></select>
+            <button type="button" id="joker-add-select" class="jpick" disabled>Loading jokers…</button>
             <button id="joker-add-btn">Add</button>
           </fieldset>
         </div>
@@ -135,6 +143,80 @@
         </div>
         <div id="licenses-body" class="sheet-body"></div>
       </div>
+    </div>
+
+    <div id="settings-modal" class="modal" hidden>
+      <div class="sheet sheet-sm" role="dialog" aria-labelledby="settings-title">
+        <div class="sheet-head">
+          <h2 id="settings-title">Settings</h2>
+          <div class="sheet-head-end">
+            <span id="settings-version" class="sheet-version selectable" title="App version"></span>
+            <button id="settings-close">Close</button>
+          </div>
+        </div>
+        <div class="sheet-body settings">
+          <div class="set-row">
+            <div class="row-text">
+              <span class="row-title">Interface</span>
+              <span class="row-sub">Themed matches Balatro. Flat looks like a regular desktop app and follows your system's light or dark mode.</span>
+            </div>
+            <div class="seg" role="group" aria-label="Interface style">
+              <button type="button" data-ui-choice="flat" aria-pressed="false">Flat</button>
+              <button type="button" data-ui-choice="themed" aria-pressed="true">Themed</button>
+            </div>
+          </div>
+          <div class="set-row">
+            <label class="row-text" for="set-backup">
+              <span class="row-title">Back up before saving</span>
+              <span class="row-sub">Writes a timestamped .bak copy next to your save first. Same as the checkbox by the Save button.</span>
+            </label>
+            <input type="checkbox" id="set-backup" checked />
+          </div>
+          <div class="set-row">
+            <div class="row-text">
+              <span class="row-title">Updates</span>
+              <span id="update-status" class="row-sub" role="status">Checks GitHub for a newer release.</span>
+            </div>
+            <button type="button" id="update-check">Check now</button>
+          </div>
+          <div class="set-row">
+            <label class="row-text" for="set-updates">
+              <span class="row-title">Check for updates on launch</span>
+              <span class="row-sub">Only asks when a newer version is out. Nothing is downloaded without your OK.</span>
+            </label>
+            <input type="checkbox" id="set-updates" checked />
+          </div>
+          <div class="set-row">
+            <div class="row-text">
+              <span class="row-title">Settings file</span>
+              <span id="settings-path" class="row-sub selectable settings-path"></span>
+            </div>
+          </div>
+          <div class="set-row">
+            <div class="row-text">
+              <span class="row-title">Reset settings</span>
+              <span class="row-sub">Puts every setting back to its default. The app restarts to finish.</span>
+            </div>
+            <button type="button" id="settings-reset" class="danger">Reset…</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="jpick-pop" class="jpick-pop" hidden>
+      <input
+        id="jpick-search"
+        type="search"
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded="true"
+        aria-controls="jpick-list"
+        aria-label="Search jokers"
+        placeholder="Search jokers…"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <div id="jpick-list" class="jpick-list" role="listbox" aria-label="Jokers"></div>
     </div>
 
     <script src="app.js"></script>

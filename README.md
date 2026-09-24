@@ -20,6 +20,8 @@ The editor auto-detects your Balatro save and lets you toggle any of these chang
 - **Card slot limits** – raise joker and consumable slot counts
 - **Remove "eternal"** – strip the eternal sticker from jokers
 - **Joker Editing** - Add/Remove/Modify jokers and their enhancements
+- **Themed or Flat UI** - a Balatro-style look (default) or a plain native one; switch at the bottom of the sidebar. Settings live in `settings.json` in your app-data folder (`%APPDATA%\Balatro Save Editor`, `~/Library/Application Support/Balatro Save Editor`, or `~/.config/balatro-save-editor`) and can be reset from **Settings**.
+- **Update check** - on launch (can be turned off) or from **Settings → Check now**, compares your version with the latest GitHub release and offers to open the download page. Nothing is downloaded automatically.
 
 ## Supported platforms
 

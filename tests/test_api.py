@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import app as app_pkg
 from app import paths, resources
 from app.api import Api
 
@@ -222,7 +223,53 @@ def test_confirm_uses_native_dialog():
 
 
 def test_app_info(monkeypatch):
-    monkeypatch.setattr(resources, 'load_licenses', lambda: {'app': {'version': '9.9.9'}, 'entries': []})
-    assert Api(debug=True).app_info() == {'version': '9.9.9', 'debug': True}
+    # The version comes from the app package (kept current by npm run sync), not licenses.json.
     monkeypatch.setattr(resources, 'load_licenses', lambda: {'app': None, 'entries': []})
-    assert Api().app_info() == {'version': None, 'debug': False}
+    info = Api(debug=True).app_info()
+    assert (info['version'], info['debug']) == (app_pkg.__version__, True)
+    assert info['settings'] == {'ui': 'themed', 'backup': True, 'check_updates': True}
+    assert info['settings_path'].endswith('settings.json')
+    assert Api().app_info()['debug'] is False
+
+
+def test_set_and_reset_settings(isolated_settings):
+    api = Api()
+    res = api.set_setting('ui', 'flat')
+    assert res == {'ok': True, 'settings': {'ui': 'flat', 'backup': True, 'check_updates': True}}
+    assert api.app_info()['settings']['ui'] == 'flat'
+    assert (isolated_settings / 'settings.json').is_file()
+
+    bad = api.set_setting('ui', 'neon')
+    assert bad['ok'] is False and 'ui' in bad['error']
+    assert api.set_setting('nope', 1)['ok'] is False
+
+    assert api.reset_settings() == {'ok': True, 'settings': {'ui': 'themed', 'backup': True, 'check_updates': True}}
+    assert not (isolated_settings / 'settings.json').exists()
+
+
+def test_restart_relaunches_then_closes(monkeypatch):
+    launched = {}
+
+    def fake_popen(argv, **kwargs):
+        launched.update(argv=argv, kwargs=kwargs)
+
+    monkeypatch.setattr('app.api.subprocess.Popen', fake_popen)
+    win = FakeWindow()
+    win.destroyed = False
+    win.destroy = lambda: setattr(win, 'destroyed', True)
+
+    assert Api(win).restart() == {'ok': True}
+    assert launched['argv'][1:] == ['-m', 'app.main']
+    assert launched['kwargs']['cwd'] == resources.resource_base()
+    assert win.destroyed is True
+
+
+def test_restart_reports_launch_failure(monkeypatch):
+    def boom(argv, **kwargs):
+        raise OSError('nope')
+
+    monkeypatch.setattr('app.api.subprocess.Popen', boom)
+    win = FakeWindow()
+    win.destroy = lambda: (_ for _ in ()).throw(AssertionError('must not close'))
+    res = Api(win).restart()
+    assert res['ok'] is False and 'nope' in res['error']
