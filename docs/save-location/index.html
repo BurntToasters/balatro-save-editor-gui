@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Where is the Balatro save file? Windows, macOS, Linux and Steam Deck</title>
+    <meta
+      name="description"
+      content="Balatro save file locations for Windows, macOS, Linux (Proton) and Steam Deck, what save.jkr, profile.jkr and meta.jkr hold, and how to back up and restore your saves."
+    />
+    <link rel="canonical" href="https://bse.burnttoasters.com/save-location/" />
+    <meta name="theme-color" content="#1d3532" />
+    <link rel="icon" type="image/png" href="../img/icon.png" />
+    <link rel="apple-touch-icon" href="../img/icon.png" />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="Balatro Save Editor" />
+    <meta property="og:title" content="Where is the Balatro save file?" />
+    <meta
+      property="og:description"
+      content="Save locations for Windows, macOS, Linux and Steam Deck, what each .jkr file holds, and how to back up and restore."
+    />
+    <meta property="og:url" content="https://bse.burnttoasters.com/save-location/" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:image" content="https://bse.burnttoasters.com/img/social.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="640" />
+    <meta property="og:image:alt" content="Balatro Save Editor: edit money, blinds, hand mult, slot limits and jokers" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Where is the Balatro save file?" />
+    <meta
+      name="twitter:description"
+      content="Save locations for Windows, macOS, Linux and Steam Deck, what each .jkr file holds, and how to back up and restore."
+    />
+    <meta name="twitter:image" content="https://bse.burnttoasters.com/img/social.png" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Balatro Save Editor", "item": "https://bse.burnttoasters.com/" },
+          { "@type": "ListItem", "position": 2, "name": "Save file location", "item": "https://bse.burnttoasters.com/save-location/" }
+        ]
+      }
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <header class="topbar wrap">
+      <a class="brand" href="../">
+        <img src="../img/icon.png" alt="" width="32" height="32" />
+        <span>Balatro Save Editor</span>
+      </a>
+      <nav class="topbar-links">
+        <a class="btn btn-grey btn-sm" href="https://github.com/BurntToasters/balatro-save-editor-gui">GitHub</a>
+        <a class="btn btn-grey btn-sm" href="https://rosie.run/support"><span aria-hidden="true">❤️</span> Support Me</a>
+      </nav>
+    </header>
+
+    <main class="guide">
+      <section class="wrap guide-intro">
+        <nav class="crumbs" aria-label="Breadcrumb"><a href="../">Balatro Save Editor</a> / Save file location</nav>
+        <h1>Where is my Balatro save file?</h1>
+        <p class="lead">
+          Balatro keeps its saves in a <code>Balatro</code> folder with one numbered subfolder per profile
+          (<code>1</code>, <code>2</code>, <code>3</code>). Your current run is <code>save.jkr</code> inside the profile you
+          play on. Here's where that folder is on each system.
+        </p>
+      </section>
+
+      <section class="wrap" aria-labelledby="where-h">
+        <h2 id="where-h">Save folder by platform</h2>
+        <dl class="paths panel">
+          <dt>Windows</dt>
+          <dd><code>%APPDATA%\Balatro\</code></dd>
+          <dt>macOS</dt>
+          <dd><code>~/Library/Application Support/Balatro/</code></dd>
+          <dt>Linux (Proton)</dt>
+          <dd><code>~/.local/share/Steam/steamapps/compatdata/2379780/pfx/drive_c/users/steamuser/AppData/Roaming/Balatro/</code></dd>
+          <dt>Steam Deck</dt>
+          <dd><code>/home/deck/.local/share/Steam/steamapps/compatdata/2379780/pfx/drive_c/users/steamuser/AppData/Roaming/Balatro/</code></dd>
+        </dl>
+        <p class="note">
+          These are the Steam versions. On Linux, <code>2379780</code> is Balatro's Steam app ID. If Balatro is installed
+          on another drive or SD card, the <code>steamapps</code> folder is on that library instead. With the Flatpak
+          Steam, start from <code>~/.var/app/com.valvesoftware.Steam/.local/share/Steam/</code>.
+        </p>
+      </section>
+
+      <section class="wrap" aria-labelledby="open-h">
+        <h2 id="open-h">Open it quickly</h2>
+        <div class="steps">
+          <div class="panel step">
+            <h3>Windows</h3>
+            <p>Press <kbd>Win</kbd> + <kbd>R</kbd>, paste <code>%APPDATA%\Balatro</code> and press Enter.</p>
+          </div>
+          <div class="panel step">
+            <h3>macOS</h3>
+            <p>
+              In Finder press <kbd>⌘</kbd> + <kbd>Shift</kbd> + <kbd>G</kbd>, paste
+              <code>~/Library/Application Support/Balatro</code> and press Return.
+            </p>
+          </div>
+          <div class="panel step">
+            <h3>Linux and Steam Deck</h3>
+            <p>
+              In the file manager, turn on hidden files (<kbd>Ctrl</kbd> + <kbd>H</kbd>) and follow the path above. On
+              Steam Deck, do this in Desktop Mode.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="wrap" aria-labelledby="files-h">
+        <h2 id="files-h">What's in the folder</h2>
+        <div class="panel hands">
+          <div class="hand">
+            <div class="hand-name">save.jkr</div>
+            <p>
+              The run you're in the middle of: money, the current blind, hand levels, jokers, consumables and your deck.
+              It only exists while a run is in progress.
+            </p>
+            <div class="chips"><span class="pill blue">Current run</span></div>
+          </div>
+          <div class="hand">
+            <div class="hand-name">profile.jkr</div>
+            <p>Profile stats and progress: high scores, career stats, and deck and stake wins.</p>
+            <div class="chips"><span class="pill grey">Profile</span></div>
+          </div>
+          <div class="hand">
+            <div class="hand-name">meta.jkr</div>
+            <p>What you've unlocked and discovered: jokers, vouchers, decks and the rest of your collection.</p>
+            <div class="chips"><span class="pill grey">Unlocks</span></div>
+          </div>
+          <div class="hand">
+            <div class="hand-name">settings.jkr</div>
+            <p>Game settings. It sits in the top <code>Balatro</code> folder and is shared by all profiles.</p>
+            <div class="chips"><span class="pill grey">Settings</span></div>
+          </div>
+        </div>
+        <p class="note">
+          The <code>.jkr</code> files are compressed Lua data, so they look like gibberish in a text editor. The folders
+          <code>1</code>, <code>2</code> and <code>3</code> are your three profiles.
+        </p>
+      </section>
+
+      <section class="wrap" aria-labelledby="backup-h">
+        <h2 id="backup-h">Back up and restore</h2>
+        <div class="steps">
+          <div class="panel step">
+            <h3>Back up</h3>
+            <p>
+              Close Balatro, then copy the whole <code>Balatro</code> folder somewhere safe. That covers every profile,
+              your unlocks and your settings. To keep just one profile, copy its numbered folder.
+            </p>
+          </div>
+          <div class="panel step">
+            <h3>Restore</h3>
+            <p>
+              Close Balatro and copy your backup back over the folder. If Steam Cloud says your local files don't match
+              the cloud, choose to keep the local files, or Steam will put the old ones back.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="wrap split-cta" aria-labelledby="edit-h">
+        <div class="panel cta-panel">
+          <h2 id="edit-h">Want to change your run?</h2>
+          <p>
+            Balatro Save Editor finds this folder by itself and edits <code>save.jkr</code>: set your money, beat the
+            current blind, change hand mult, raise slot limits and edit jokers. It makes a backup before every save.
+          </p>
+          <div class="cta">
+            <a class="btn btn-red" href="../#download">Download the editor</a>
+            <a class="btn btn-grey" href="../">What it can do</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="wrap faq" aria-labelledby="faq-h">
+        <h2 id="faq-h">Questions</h2>
+        <details class="panel">
+          <summary>There's no save.jkr in my profile folder</summary>
+          <p>
+            Balatro only keeps <code>save.jkr</code> while a run is in progress, and deletes it when the run ends. Start
+            a run and go back to the main menu; the game writes it then. Make sure you're looking in the profile folder
+            you actually play on.
+          </p>
+        </details>
+        <details class="panel">
+          <summary>Which numbered folder is my profile?</summary>
+          <p>
+            Folder <code>1</code> is the first profile in the game's profile menu, <code>2</code> the second and
+            <code>3</code> the third. If you've never switched profiles, you're on <code>1</code>.
+          </p>
+        </details>
+        <details class="panel">
+          <summary>Does Steam Cloud back up my saves?</summary>
+          <p>
+            Yes, Steam Cloud syncs the <code>Balatro</code> folder for the Steam version. It keeps one copy, though, not
+            a history, so a local backup is still worth having before you change anything.
+          </p>
+        </details>
+      </section>
+    </main>
+
+    <footer class="wrap footer">
+      <span>MPL-2.0 · Forked from <a href="https://github.com/problemsalved/balatro_save_editor">problemsalved/balatro_save_editor</a></span>
+      <span>
+        <a href="../">Home</a> ·
+        <a href="https://github.com/BurntToasters/balatro-save-editor-gui">Source</a> ·
+        <a href="https://github.com/BurntToasters/balatro-save-editor-gui/releases">Releases</a> ·
+        <a href="https://github.com/BurntToasters/balatro-save-editor-gui/issues">Report a bug</a>
+      </span>
+    </footer>
+  </body>
+</html>

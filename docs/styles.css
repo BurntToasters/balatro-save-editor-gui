@@ -516,6 +516,77 @@ main > section {
   font-size: 0.9rem;
 }
 
+/* ---- guide pages ---- */
+
+.guide-intro {
+  margin-top: 40px;
+}
+
+.crumbs {
+  margin-bottom: 14px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.guide h1 {
+  font-size: clamp(2rem, 6vw, 3rem);
+}
+
+.guide .lead {
+  max-width: 42em;
+}
+
+.guide .note {
+  margin-top: 14px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.steps {
+  display: grid;
+  gap: 14px;
+}
+
+@media (min-width: 760px) {
+  .steps {
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  }
+}
+
+.step {
+  padding: 16px 18px 4px;
+}
+
+.step h3 {
+  margin: 0 0 6px;
+  font-size: 1.15rem;
+}
+
+.step p {
+  color: var(--muted);
+}
+
+kbd {
+  font: 0.85em var(--mono);
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--slate);
+  box-shadow: 0 2px 0 var(--slate-edge);
+}
+
+.cta-panel {
+  padding: 22px 24px 24px;
+}
+
+.cta-panel h2 {
+  margin-bottom: 10px;
+}
+
+.cta-panel p {
+  color: var(--muted);
+  max-width: 44em;
+}
+
 /* ---- faq ---- */
 
 .faq details {

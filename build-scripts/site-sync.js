@@ -5,7 +5,7 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 const DOCS = path.join(ROOT, 'docs');
-const REWRITE = ['docs/index.html', 'docs/404.html', 'docs/sitemap.xml', 'docs/robots.txt', 'README.md'];
+const OTHER_REWRITE = ['docs/robots.txt', 'README.md'];
 
 function siteUrlFrom({ cname, repoUrl }) {
   const domain = String(cname || '').trim().split(/\s+/)[0];
@@ -22,13 +22,36 @@ function canonicalOf(html) {
 
 const rebase = (text, from, to) => (from && from !== to ? text.split(from).join(to) : text);
 
-function setLastmod(xml, date) {
-  return xml.replace(/<lastmod>[^<]*<\/lastmod>/g, `<lastmod>${date}</lastmod>`);
+// docs/index.html -> base, docs/save-location/index.html -> base + "save-location/".
+function pageUrl(base, rel) {
+  const inDocs = rel.replace(/\\/g, '/').replace(/^docs\//, '');
+  return base + inDocs.replace(/(^|\/)index\.html$/, '$1');
 }
 
-// Last time the page content changed: today if index.html is dirty, else its last commit date.
-function contentDate() {
-  const rel = 'docs/index.html';
+function isIndexable(rel, html) {
+  if (/(^|\/)404\.html$/.test(rel.replace(/\\/g, '/'))) return false;
+  return !/<meta\s+name="robots"\s+content="[^"]*noindex/i.test(html);
+}
+
+function buildSitemap(entries) {
+  const urls = entries.map((e) => `  <url>\n    <loc>${e.loc}</loc>\n    <lastmod>${e.lastmod}</lastmod>\n  </url>\n`).join('');
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}</urlset>\n`;
+}
+
+const sitemapLocs = (xml) => [...xml.matchAll(/<loc>([^<]*)<\/loc>/g)].map((m) => m[1]);
+
+function htmlPages(dir = DOCS) {
+  const out = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...htmlPages(full));
+    else if (entry.name.endsWith('.html')) out.push(path.relative(ROOT, full).replace(/\\/g, '/'));
+  }
+  return out.sort();
+}
+
+// When a page's content last changed: today if it has uncommitted edits, else its last commit date.
+function contentDate(rel) {
   try {
     const dirty = execFileSync('git', ['status', '--porcelain', '--', rel], { cwd: ROOT, encoding: 'utf8' }).trim();
     if (!dirty) {
@@ -51,47 +74,59 @@ function readState() {
   const base = siteUrlFrom({ cname, repoUrl: pkg.repository && pkg.repository.url });
   const current = canonicalOf(read(path.join(DOCS, 'index.html')));
   if (!current) throw new Error('docs/index.html has no <link rel="canonical">');
-  return { base, current, pkg, pkgPath };
+  const pages = htmlPages().map((rel) => {
+    const html = read(path.join(ROOT, rel));
+    return { rel, html, indexable: isIndexable(rel, html) };
+  });
+  return { base, current, pkg, pkgPath, pages };
 }
 
 function problems() {
-  const { base, current, pkg } = readState();
+  const { base, current, pkg, pages } = readState();
   const out = [];
-  if (current !== base) out.push(`canonical is ${current}, expected ${base}`);
-  for (const rel of REWRITE) {
+  for (const page of pages) {
+    if (!page.indexable) continue;
+    const want = pageUrl(base, page.rel);
+    const got = canonicalOf(page.html);
+    if (got !== want) out.push(`${page.rel} canonical is ${got || '(missing)'}, expected ${want}`);
+  }
+  const rewrite = [...pages.map((p) => p.rel), 'docs/sitemap.xml', ...OTHER_REWRITE];
+  for (const rel of rewrite) {
     const file = path.join(ROOT, rel);
     if (fs.existsSync(file) && current !== base && read(file).includes(current)) out.push(`${rel} still uses ${current}`);
   }
   if (!read(path.join(DOCS, 'robots.txt')).includes(`Sitemap: ${base}sitemap.xml`)) out.push('robots.txt Sitemap line is stale');
-  if (!read(path.join(DOCS, 'sitemap.xml')).includes(`<loc>${base}</loc>`)) out.push('sitemap.xml <loc> is stale');
+  const want = pages.filter((p) => p.indexable).map((p) => pageUrl(base, p.rel)).sort();
+  const have = sitemapLocs(read(path.join(DOCS, 'sitemap.xml'))).sort();
+  if (JSON.stringify(have) !== JSON.stringify(want)) out.push(`sitemap.xml lists ${have.join(', ') || 'nothing'}, expected ${want.join(', ')}`);
   if (pkg.homepage !== base) out.push(`package.json homepage is ${pkg.homepage}, expected ${base}`);
   return { base, list: out };
 }
 
 function sync() {
-  const { base, current, pkg, pkgPath } = readState();
+  const { base, current, pkg, pkgPath, pages } = readState();
   const changed = [];
-  for (const rel of REWRITE) {
+  const write = (rel, text) => {
     const file = path.join(ROOT, rel);
-    if (!fs.existsSync(file)) continue;
-    const text = read(file);
-    let next = rebase(text, current, base);
-    if (rel === 'docs/sitemap.xml') next = setLastmod(next, contentDate());
-    if (next !== text) {
-      fs.writeFileSync(file, next);
-      changed.push(rel);
-    }
+    if (fs.existsSync(file) && read(file) === text) return;
+    fs.writeFileSync(file, text);
+    changed.push(rel);
+  };
+  for (const page of pages) write(page.rel, rebase(page.html, current, base));
+  for (const rel of OTHER_REWRITE) {
+    const file = path.join(ROOT, rel);
+    if (fs.existsSync(file)) write(rel, rebase(read(file), current, base));
   }
+  const entries = pages.filter((p) => p.indexable).map((p) => ({ loc: pageUrl(base, p.rel), lastmod: contentDate(p.rel) }));
+  write('docs/sitemap.xml', buildSitemap(entries));
   if (pkg.homepage !== base) {
-    const text = read(pkgPath);
-    fs.writeFileSync(pkgPath, text.replace(/("homepage":\s*)"[^"]*"/, `$1"${base}"`));
-    changed.push('package.json');
+    write('package.json', read(pkgPath).replace(/("homepage":\s*)"[^"]*"/, `$1"${base}"`));
   }
-  console.log(`Site URL ${base} -> ${changed.length ? changed.join(', ') : '(already in sync)'}`);
+  console.log(`Site URL ${base} (${entries.length} page(s) in sitemap) -> ${changed.length ? changed.join(', ') : '(already in sync)'}`);
   if (current !== base) console.log(`Also update the repo homepage: gh repo edit --homepage ${base}`);
 }
 
-module.exports = { siteUrlFrom, canonicalOf, rebase, setLastmod, problems };
+module.exports = { siteUrlFrom, canonicalOf, rebase, pageUrl, isIndexable, buildSitemap, sitemapLocs, problems };
 
 if (require.main === module) {
   if (process.argv.includes('--check')) {

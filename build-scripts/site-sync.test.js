@@ -2,7 +2,7 @@
 
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const { siteUrlFrom, canonicalOf, rebase, setLastmod, problems } = require('./site-sync');
+const { siteUrlFrom, canonicalOf, rebase, pageUrl, isIndexable, buildSitemap, sitemapLocs, problems } = require('./site-sync');
 
 const REPO = 'git+https://github.com/BurntToasters/balatro-save-editor-gui.git';
 
@@ -26,8 +26,27 @@ test('rebase swaps every absolute site URL and nothing else', () => {
   assert.equal(rebase(html, from, from), html);
 });
 
-test('sitemap lastmod is replaced', () => {
-  assert.equal(setLastmod('<lastmod>2020-01-01</lastmod>', '2026-09-24'), '<lastmod>2026-09-24</lastmod>');
+test('page URLs map index.html files to directory URLs', () => {
+  const base = 'https://x.dev/';
+  assert.equal(pageUrl(base, 'docs/index.html'), 'https://x.dev/');
+  assert.equal(pageUrl(base, 'docs/save-location/index.html'), 'https://x.dev/save-location/');
+  assert.equal(pageUrl(base, 'docs/about.html'), 'https://x.dev/about.html');
+});
+
+test('404 and noindex pages stay out of the sitemap', () => {
+  assert.equal(isIndexable('docs/index.html', '<html></html>'), true);
+  assert.equal(isIndexable('docs/404.html', '<html></html>'), false);
+  assert.equal(isIndexable('docs/draft/index.html', '<meta name="robots" content="noindex" />'), false);
+});
+
+test('sitemap lists each page with its own lastmod', () => {
+  const xml = buildSitemap([
+    { loc: 'https://x.dev/', lastmod: '2026-09-24' },
+    { loc: 'https://x.dev/save-location/', lastmod: '2026-09-20' },
+  ]);
+  assert.deepEqual(sitemapLocs(xml), ['https://x.dev/', 'https://x.dev/save-location/']);
+  assert.ok(xml.includes('<lastmod>2026-09-20</lastmod>'));
+  assert.ok(xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>'));
 });
 
 test('docs/ URLs match docs/CNAME (run npm run site:sync if this fails)', () => {
