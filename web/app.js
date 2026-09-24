@@ -2,36 +2,74 @@ const $ = (id) => document.getElementById(id);
 const api = () => window.pywebview.api;
 
 let currentPath = null;
+let jokersDirty = false;
+let debug = false;
+
+// ---- status / dirty ----
 
 function setStatus(msg, kind = '') {
   const el = $('status');
   el.textContent = msg || '';
+  el.title = msg || '';
   el.className = 'status' + (kind ? ' ' + kind : '');
 }
 
-function ensureOption(path, label) {
+const PRESET_TOGGLES = ['en-money', 'en-chips', 'en-mult', 'en-limits', 'en-eternal'];
+
+const presetsDirty = () => PRESET_TOGGLES.some((id) => $(id).checked);
+const isDirty = () => jokersDirty || presetsDirty();
+
+function refreshDirty() {
+  const dirty = !!currentPath && isDirty();
+  $('dirty').hidden = !dirty;
+  $('save').disabled = !dirty;
+}
+
+function clearPresets() {
+  for (const id of PRESET_TOGGLES) $(id).checked = false;
+}
+
+async function confirmDiscard() {
+  if (!currentPath || !isDirty()) return true;
+  return api().confirm('Discard changes?', 'You have unsaved changes. Discard them?');
+}
+
+// ---- save file / run state ----
+
+function selectProfile(path, label) {
   const sel = $('profile');
+  if (sel.disabled) sel.textContent = ''; // drop the "No save detected" placeholder
   sel.disabled = false;
-  let opt = [...sel.options].find((o) => o.value === path);
-  if (!opt) {
-    opt = document.createElement('option');
-    opt.value = path;
-    opt.textContent = (label ? label + ' — ' : '') + path;
+  if (![...sel.options].some((o) => o.value === path)) {
+    const opt = new Option(`${label} (opened)`, path);
+    opt.title = path;
     sel.appendChild(opt);
   }
   sel.value = path;
 }
 
+function setPresetAvailable(toggleId, available) {
+  const cb = $(toggleId);
+  cb.disabled = !available;
+  if (!available) cb.checked = false;
+  cb.closest('.row').classList.toggle('na', !available);
+}
+
 function renderState(state) {
-  const loaded = state && state.loaded;
-  $('save').disabled = !loaded;
+  const loaded = !!(state && state.loaded);
+  $('run-set').disabled = !loaded;
+  $('joker-add-set').disabled = !loaded;
+  $('reload').disabled = !loaded;
   if (!loaded) {
+    currentPath = null;
     $('save-path').textContent = '';
-    $('jokers-panel').hidden = true;
+    renderJokers(null);
+    refreshDirty();
     return;
   }
   currentPath = state.save_path;
   $('save-path').textContent = state.save_path;
+  $('save-path').title = state.save_path;
   $('cur-money').textContent = state.money ?? '—';
   $('cur-blind').textContent = state.blind_target ?? '—';
   $('cur-mult').textContent =
@@ -42,19 +80,11 @@ function renderState(state) {
 
   if (state.money && !$('val-money').value) $('val-money').value = state.money;
 
-  const hasBlind = state.blind_target != null;
-  $('en-chips').disabled = !hasBlind;
-  if (!hasBlind) $('en-chips').checked = false;
-  $('en-chips').closest('.preset').classList.toggle('disabled', !hasBlind);
+  setPresetAvailable('en-chips', state.blind_target != null);
+  setPresetAvailable('en-eternal', !!state.eternal_jokers);
 
-  const noEternal = !state.eternal_jokers;
-  $('en-eternal').disabled = noEternal;
-  if (noEternal) $('en-eternal').checked = false;
-  $('en-eternal').closest('.preset').classList.toggle('disabled', noEternal);
-
-  if ([...$('profile').options].some((o) => o.value === state.save_path)) {
-    $('profile').value = state.save_path;
-  }
+  selectProfile(state.save_path, state.profile);
+  refreshDirty();
 }
 
 function gather() {
@@ -75,6 +105,8 @@ function gather() {
 async function loadPath(path) {
   setStatus('Loading…');
   const res = await api().load_save(path ?? null);
+  clearPresets();
+  jokersDirty = false;
   if (!res.ok) {
     renderState({ loaded: false });
     setStatus(res.error, 'error');
@@ -82,48 +114,41 @@ async function loadPath(path) {
   }
   renderState(res.state);
   await loadJokers();
-  setStatus(`Loaded ${res.state.profile}.`, 'ok');
+  setStatus(`Loaded ${res.state.profile}.`);
 }
 
 async function refreshProfiles() {
   const saves = await api().detect_saves();
   const sel = $('profile');
-  sel.innerHTML = '';
+  sel.textContent = '';
   if (!saves.length) {
     const opt = document.createElement('option');
     opt.value = '';
-    opt.textContent = 'No save detected';
+    opt.textContent = 'No save detected — use Open…';
     sel.appendChild(opt);
     sel.disabled = true;
     return saves;
   }
   sel.disabled = false;
   for (const s of saves) {
-    const opt = document.createElement('option');
-    opt.value = s.path;
-    opt.textContent = `${s.label} — ${s.path}`;
+    const opt = new Option(s.label, s.path);
+    opt.title = s.path;
     sel.appendChild(opt);
   }
   return saves;
 }
 
-async function applyAndSave() {
-  if (!currentPath) {
-    setStatus('No save loaded.', 'error');
-    return;
-  }
-  const changes = gather();
-  if (!Object.values(changes).some((c) => c.enabled)) {
-    setStatus('Select at least one change first.', 'error');
-    return;
-  }
+async function save() {
+  if (!currentPath || !isDirty()) return;
   $('save').disabled = true;
-  setStatus('Applying…');
+  setStatus('Saving…');
   try {
-    const ap = await api().apply(changes);
-    if (!ap.ok) {
-      setStatus(ap.error, 'error');
-      return;
+    if (presetsDirty()) {
+      const ap = await api().apply(gather());
+      if (!ap.ok) {
+        setStatus(ap.error, 'error');
+        return;
+      }
     }
     const backup = $('backup').checked;
     const sv = await api().save(backup);
@@ -131,16 +156,171 @@ async function applyAndSave() {
       setStatus(sv.error, 'error');
       return;
     }
+    clearPresets();
+    jokersDirty = false;
     renderState(sv.state);
-    setStatus('Saved.' + (backup ? ' A backup was created next to the save file.' : ''), 'ok');
+    await loadJokers();
+    setStatus('Saved.' + (backup ? ' Backup created next to the save file.' : ''), 'ok');
   } finally {
-    $('save').disabled = !currentPath;
+    refreshDirty();
   }
 }
 
-function openExternal(url) {
-  if (url && window.pywebview) api().open_url(url);
+async function openFile() {
+  if (!(await confirmDiscard())) return;
+  const path = await api().pick_file();
+  if (path) await loadPath(path);
 }
+
+// ---- jokers ----
+
+const EDITION_OPTS = [
+  ['', 'None'],
+  ['foil', 'Foil'],
+  ['holo', 'Holographic'],
+  ['polychrome', 'Polychrome'],
+  ['negative', 'Negative'],
+];
+const STICKERS = ['eternal', 'perishable', 'rental'];
+const RARITY_NAMES = { 1: 'Common', 2: 'Uncommon', 3: 'Rare', 4: 'Legendary' };
+let CATALOG = [];
+let catalogTemplate = document.createElement('select');
+
+const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+const nameForKey = (key) => (CATALOG.find((c) => c.key === key) || {}).name || key;
+
+function buildCatalogTemplate() {
+  const sel = document.createElement('select');
+  const groups = {};
+  for (const j of CATALOG) (groups[j.rarity] || (groups[j.rarity] = [])).push(j);
+  for (const r of Object.keys(groups).sort()) {
+    const og = document.createElement('optgroup');
+    og.label = RARITY_NAMES[r] || `Rarity ${r}`;
+    for (const j of groups[r]) og.appendChild(new Option(j.name, j.key));
+    sel.appendChild(og);
+  }
+  catalogTemplate = sel;
+}
+
+const catalogSelect = () => catalogTemplate.cloneNode(true);
+
+function mini(text, control) {
+  const l = document.createElement('label');
+  l.className = 'mini';
+  l.append(text, control);
+  return l;
+}
+
+function button(text, cls, onClick) {
+  const b = document.createElement('button');
+  b.className = cls;
+  b.textContent = text;
+  b.addEventListener('click', onClick);
+  return b;
+}
+
+function buildJokerRow(j) {
+  const row = document.createElement('div');
+  row.className = 'joker';
+
+  const name = document.createElement('div');
+  name.className = 'joker-name';
+  const nm = document.createElement('b');
+  nm.textContent = j.name || j.center || `Joker ${j.index + 1}`;
+  const ct = document.createElement('span');
+  ct.className = 'muted';
+  ct.textContent = j.center || '';
+  name.append(nm, ct);
+
+  const acts = document.createElement('div');
+  acts.className = 'joker-acts';
+  acts.append(
+    button('Duplicate', 'quiet', async () => applyJokerResult(await api().joker_duplicate(j.index))),
+    button('Delete', 'quiet danger', async () => applyJokerResult(await api().joker_delete(j.index))),
+  );
+
+  const ctrls = document.createElement('div');
+  ctrls.className = 'joker-ctrls';
+
+  const typeSel = catalogSelect();
+  if (j.center && !CATALOG.some((c) => c.key === j.center)) {
+    typeSel.prepend(new Option(j.center, j.center));
+  }
+  if (j.center) typeSel.value = j.center;
+  typeSel.addEventListener('change', async () => {
+    applyJokerResult(await api().joker_set_type(j.index, typeSel.value, nameForKey(typeSel.value)));
+  });
+
+  const edSel = document.createElement('select');
+  for (const [val, label] of EDITION_OPTS) edSel.appendChild(new Option(label, val));
+  edSel.value = j.edition || '';
+  edSel.addEventListener('change', async () => {
+    applyJokerResult(await api().joker_set_edition(j.index, edSel.value));
+  });
+
+  const sell = document.createElement('input');
+  sell.type = 'number';
+  sell.min = '0';
+  sell.step = '1';
+  if (j.sell_cost != null) sell.value = j.sell_cost;
+  sell.addEventListener('change', async () => {
+    applyJokerResult(await api().joker_set_sell(j.index, Number(sell.value)));
+  });
+
+  const stickers = document.createElement('div');
+  stickers.className = 'stickers';
+  for (const s of STICKERS) {
+    const lbl = document.createElement('label');
+    lbl.className = 'check';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = (j.stickers || []).includes(s);
+    cb.addEventListener('change', async () => {
+      applyJokerResult(await api().joker_set_sticker(j.index, s, cb.checked));
+    });
+    lbl.append(cb, capitalize(s));
+    stickers.appendChild(lbl);
+  }
+
+  ctrls.append(mini('Type', typeSel), mini('Edition', edSel), mini('Sell', sell), stickers);
+  row.append(name, acts, ctrls);
+  return row;
+}
+
+function renderJokers(jokers) {
+  const list = $('joker-list');
+  const scroller = $('content');
+  const keep = scroller.scrollTop;
+  list.textContent = '';
+  $('joker-count').textContent = jokers ? `(${jokers.length})` : '';
+  if (!jokers || !jokers.length) {
+    const p = document.createElement('p');
+    p.className = 'empty';
+    p.textContent = jokers ? 'No jokers in this save.' : 'No save loaded.';
+    list.appendChild(p);
+  } else {
+    for (const j of jokers) list.appendChild(buildJokerRow(j));
+  }
+  scroller.scrollTop = keep;
+}
+
+function applyJokerResult(res) {
+  if (!res || !res.ok) {
+    setStatus((res && res.error) || 'Joker edit failed.', 'error');
+    return;
+  }
+  jokersDirty = true;
+  renderJokers(res.jokers);
+  refreshDirty();
+  setStatus('');
+}
+
+async function loadJokers() {
+  const res = await api().get_jokers();
+  renderJokers(res && res.ok ? res.jokers : null);
+}
+
+// ---- licenses ----
 
 function licenseEntryNode(e) {
   const wrap = document.createElement('div');
@@ -182,6 +362,7 @@ async function openLicenses() {
   const body = $('licenses-body');
   body.textContent = 'Loading…';
   $('licenses-modal').hidden = false;
+  $('licenses-close').focus();
   let data;
   try {
     data = await api().get_licenses();
@@ -205,211 +386,138 @@ function closeLicenses() {
   $('licenses-modal').hidden = true;
 }
 
-// ---- jokers ----
+// ---- sidebar: jump + scrollspy ----
 
-const EDITION_OPTS = [
-  ['', 'None'],
-  ['foil', 'Foil'],
-  ['holo', 'Holographic'],
-  ['polychrome', 'Polychrome'],
-  ['negative', 'Negative'],
-];
-const RARITY_NAMES = { 1: 'Common', 2: 'Uncommon', 3: 'Rare', 4: 'Legendary' };
-let CATALOG = [];
+function initNav() {
+  const scroller = $('content');
+  const items = [...document.querySelectorAll('.nav-item')];
+  const sections = items.map((b) => $(b.dataset.target));
 
-const escapeHtml = (s) =>
-  String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-const escapeAttr = (s) =>
-  String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
-const nameForKey = (key) => (CATALOG.find((c) => c.key === key) || {}).name || key;
+  let jumping = false;
 
-function catalogOptionsHtml() {
-  const groups = { 1: [], 2: [], 3: [], 4: [] };
-  for (const j of CATALOG) (groups[j.rarity] || (groups[j.rarity] = [])).push(j);
-  let html = '';
-  for (const r of [1, 2, 3, 4]) {
-    if (!groups[r] || !groups[r].length) continue;
-    html += `<optgroup label="${RARITY_NAMES[r] || 'Rarity ' + r}">`;
-    for (const j of groups[r]) html += `<option value="${escapeAttr(j.key)}">${escapeHtml(j.name)}</option>`;
-    html += '</optgroup>';
-  }
-  return html;
-}
+  const setActive = (idx) => items.forEach((b, i) => b.classList.toggle('active', i === idx));
 
-function labeled(text, control) {
-  const l = document.createElement('label');
-  l.className = 'j-field';
-  const s = document.createElement('span');
-  s.textContent = text;
-  l.append(s, control);
-  return l;
-}
+  items.forEach((b, i) =>
+    b.addEventListener('click', () => {
+      // Keep the clicked item active even when a short section can't reach the top.
+      jumping = true;
+      scroller.scrollTop = sections[i].offsetTop;
+      setActive(i);
+      requestAnimationFrame(() => requestAnimationFrame(() => (jumping = false)));
+    }),
+  );
 
-function buildJokerRow(j) {
-  const row = document.createElement('div');
-  row.className = 'joker-row';
-
-  const main = document.createElement('div');
-  main.className = 'joker-main';
-  const nm = document.createElement('span');
-  nm.className = 'joker-name';
-  nm.textContent = j.name || j.center || `Joker ${j.index + 1}`;
-  const ct = document.createElement('span');
-  ct.className = 'joker-center muted';
-  ct.textContent = j.center || '';
-  main.append(nm, ct);
-  row.appendChild(main);
-
-  const ctrls = document.createElement('div');
-  ctrls.className = 'joker-ctrls';
-
-  const typeSel = document.createElement('select');
-  typeSel.className = 'j-type';
-  typeSel.innerHTML = catalogOptionsHtml();
-  if (j.center && !CATALOG.some((c) => c.key === j.center)) {
-    const o = document.createElement('option');
-    o.value = j.center;
-    o.textContent = j.center;
-    typeSel.prepend(o);
-  }
-  if (j.center) typeSel.value = j.center;
-  typeSel.addEventListener('change', async () => {
-    applyJokerResult(await api().joker_set_type(j.index, typeSel.value, nameForKey(typeSel.value)));
-  });
-  ctrls.append(labeled('Type', typeSel));
-
-  const edSel = document.createElement('select');
-  edSel.className = 'j-edition';
-  for (const [val, label] of EDITION_OPTS) {
-    const o = document.createElement('option');
-    o.value = val;
-    o.textContent = label;
-    edSel.appendChild(o);
-  }
-  edSel.value = j.edition || '';
-  edSel.addEventListener('change', async () => {
-    applyJokerResult(await api().joker_set_edition(j.index, edSel.value));
-  });
-  ctrls.append(labeled('Edition', edSel));
-
-  const stickers = document.createElement('span');
-  stickers.className = 'j-stickers';
-  for (const s of ['eternal', 'perishable', 'rental']) {
-    const lbl = document.createElement('label');
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.checked = (j.stickers || []).includes(s);
-    cb.addEventListener('change', async () => {
-      applyJokerResult(await api().joker_set_sticker(j.index, s, cb.checked));
+  scroller.addEventListener('scroll', () => {
+    if (jumping) return;
+    const top = scroller.scrollTop;
+    if (top + scroller.clientHeight >= scroller.scrollHeight - 2) return setActive(sections.length - 1);
+    let idx = 0;
+    sections.forEach((s, i) => {
+      if (s.offsetTop <= top + 24) idx = i;
     });
-    lbl.append(cb, document.createTextNode(' ' + capitalize(s)));
-    stickers.appendChild(lbl);
-  }
-  ctrls.append(labeled('Stickers', stickers));
-
-  const sell = document.createElement('input');
-  sell.type = 'number';
-  sell.min = '0';
-  sell.className = 'j-sell';
-  if (j.sell_cost != null) sell.value = j.sell_cost;
-  sell.addEventListener('change', async () => {
-    applyJokerResult(await api().joker_set_sell(j.index, Number(sell.value)));
+    setActive(idx);
   });
-  ctrls.append(labeled('Sell', sell));
-
-  row.appendChild(ctrls);
-
-  const acts = document.createElement('div');
-  acts.className = 'joker-acts';
-  const dup = document.createElement('button');
-  dup.className = 'ghost';
-  dup.textContent = 'Duplicate';
-  dup.addEventListener('click', async () => applyJokerResult(await api().joker_duplicate(j.index)));
-  const del = document.createElement('button');
-  del.className = 'danger';
-  del.textContent = 'Delete';
-  del.addEventListener('click', async () => applyJokerResult(await api().joker_delete(j.index)));
-  acts.append(dup, del);
-  row.appendChild(acts);
-
-  return row;
 }
 
-function renderJokers(jokers) {
-  const list = $('joker-list');
-  list.textContent = '';
-  $('joker-count').textContent = `(${jokers.length})`;
-  if (!jokers.length) {
-    const p = document.createElement('p');
-    p.className = 'muted';
-    p.textContent = 'No jokers in this save.';
-    list.appendChild(p);
-  }
-  for (const j of jokers) list.appendChild(buildJokerRow(j));
-}
+// ---- make the webview behave like a window, not a page ----
 
-function applyJokerResult(res) {
-  if (!res || !res.ok) {
-    setStatus((res && res.error) || 'Joker edit failed.', 'error');
-    return;
-  }
-  renderJokers(res.jokers);
-  setStatus('Joker changed — not saved yet. Use "Save jokers to disk".', '');
-}
+const BLOCKED_KEYS = new Set(['r', 'f', 'g', 'p', 'u', 's', 'o', 'j', 'h', '+', '-', '=', '0']);
 
-async function loadJokers() {
-  const res = await api().get_jokers();
-  const ok = !!(res && res.ok);
-  $('jokers-panel').hidden = !ok;
-  if (ok) {
-    renderJokers(res.jokers);
-    $('jokers-save').disabled = false;
-  }
-}
+function initAppFeel() {
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !$('licenses-modal').hidden) {
+      closeLicenses();
+      return;
+    }
+    const mod = e.ctrlKey || e.metaKey;
+    const k = e.key.toLowerCase();
+    if (mod && !e.shiftKey && !e.altKey && (k === 's' || k === 'o')) {
+      e.preventDefault();
+      if (k === 's') save();
+      else if ($('licenses-modal').hidden) openFile();
+      return;
+    }
+    if (debug) return;
+    if (/^F(3|5|7|12)$/.test(e.key) || (mod && BLOCKED_KEYS.has(k)) || (e.altKey && /^Arrow(Left|Right)$/.test(e.key))) {
+      e.preventDefault();
+    }
+    if (e.key === 'Backspace' && !e.target.closest('input, textarea, select')) e.preventDefault();
+  });
 
-async function saveJokers() {
-  if (!currentPath) {
-    setStatus('No save loaded.', 'error');
-    return;
-  }
-  $('jokers-save').disabled = true;
-  setStatus('Saving jokers…');
-  const backup = $('backup').checked;
-  const sv = await api().save(backup);
-  if (!sv.ok) {
-    setStatus(sv.error, 'error');
-    $('jokers-save').disabled = false;
-    return;
-  }
-  renderState(sv.state);
-  await loadJokers();
-  setStatus('Jokers saved.' + (backup ? ' A backup was created.' : ''), 'ok');
-}
+  document.addEventListener('contextmenu', (e) => {
+    if (!debug && !e.target.closest('input[type="number"], textarea')) e.preventDefault();
+  });
 
-window.addEventListener('pywebviewready', async () => {
-  $('open').addEventListener('click', async () => {
-    const path = await api().pick_file();
-    if (path) {
-      ensureOption(path, 'Picked');
-      await loadPath(path);
+  document.addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
+  // Scrolling over a focused number field shouldn't silently change its value.
+  document.addEventListener('wheel', (e) => {
+    const a = document.activeElement;
+    if (a && a.type === 'number' && e.target === a) a.blur();
+  }, { passive: true });
+
+  for (const t of ['dragover', 'drop']) document.addEventListener(t, (e) => e.preventDefault());
+  document.addEventListener('dragstart', (e) => { if (!e.target.closest?.('input')) e.preventDefault(); });
+
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest('[data-url]');
+    if (link) {
+      e.preventDefault();
+      api().open_url(link.dataset.url);
+    } else if (e.target.closest('a')) {
+      e.preventDefault();
     }
   });
-  $('reload').addEventListener('click', () => {
-    if (currentPath) loadPath(currentPath);
+}
+
+// ---- boot ----
+
+window.addEventListener('pywebviewready', async () => {
+  try {
+    const info = await api().app_info();
+    debug = !!info.debug;
+    if (info.version) $('app-version').textContent = info.version;
+  } catch {
+    /* older bridge */
+  }
+  initAppFeel();
+  initNav();
+
+  $('open').addEventListener('click', openFile);
+  $('reload').addEventListener('click', async () => {
+    if (currentPath && (await confirmDiscard())) loadPath(currentPath);
   });
-  $('profile').addEventListener('change', (e) => {
-    if (e.target.value) loadPath(e.target.value);
+  $('profile').addEventListener('change', async (e) => {
+    const path = e.target.value;
+    if (!path) return;
+    if (!(await confirmDiscard())) {
+      e.target.value = currentPath || '';
+      return;
+    }
+    loadPath(path);
   });
-  $('save').addEventListener('click', applyAndSave);
+  $('save').addEventListener('click', save);
+
+  for (const id of PRESET_TOGGLES) $(id).addEventListener('change', refreshDirty);
+  // Typing a value implies you want that preset applied.
+  for (const input of document.querySelectorAll('[data-toggle]')) {
+    input.addEventListener('input', () => {
+      const cb = $(input.dataset.toggle);
+      if (!cb.disabled && !cb.checked) {
+        cb.checked = true;
+        refreshDirty();
+      }
+    });
+  }
 
   try {
     CATALOG = await api().joker_catalog();
-    $('joker-add-select').innerHTML = catalogOptionsHtml();
+    buildCatalogTemplate();
+    const addSel = $('joker-add-select');
+    addSel.replaceChildren(...catalogSelect().childNodes);
+    addSel.selectedIndex = 0;
   } catch {
     /* catalog unavailable */
   }
-  $('jokers-save').addEventListener('click', saveJokers);
   $('joker-add-btn').addEventListener('click', async () => {
     const key = $('joker-add-select').value;
     if (key) applyJokerResult(await api().joker_add(key, nameForKey(key)));
@@ -420,21 +528,16 @@ window.addEventListener('pywebviewready', async () => {
   $('licenses-modal').addEventListener('click', (e) => {
     if (e.target.id === 'licenses-modal') closeLicenses();
   });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeLicenses();
-  });
-  document.addEventListener('click', (e) => {
-    const link = e.target.closest('[data-url]');
-    if (link) {
-      e.preventDefault();
-      openExternal(link.dataset.url);
-    }
-  });
 
-  const saves = await refreshProfiles();
-  if (saves.length) {
-    await loadPath(saves[0].path);
-  } else {
-    setStatus('No Balatro save found. Use Open… to choose a save.jkr file.', '');
+  try {
+    const saves = await refreshProfiles();
+    if (saves.length) {
+      await loadPath(saves[0].path);
+    } else {
+      renderState({ loaded: false });
+      setStatus('No Balatro save found. Use Open… to choose a save.jkr file.');
+    }
+  } finally {
+    api().ui_ready();
   }
 });
