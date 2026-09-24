@@ -23,7 +23,8 @@ function artifactBase() {
   return `${name}-${pkg.version}-${osTag()}-${arch()}`;
 }
 
-const RELEASE_DIR = path.join(ROOT, 'release');
+// BSE_RELEASE_DIR lets the E2E run sign into a temp folder instead of release/.
+const RELEASE_DIR = process.env.BSE_RELEASE_DIR ? path.resolve(process.env.BSE_RELEASE_DIR) : path.join(ROOT, 'release');
 
 module.exports = {
   ROOT,

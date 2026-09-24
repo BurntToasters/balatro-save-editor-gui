@@ -19,10 +19,17 @@ const PRESET_TOGGLES = ['en-money', 'en-chips', 'en-mult', 'en-limits', 'en-eter
 const presetsDirty = () => PRESET_TOGGLES.some((id) => $(id).checked);
 const isDirty = () => jokersDirty || presetsDirty();
 
+let reportedDirty = false;
+
 function refreshDirty() {
   const dirty = !!currentPath && isDirty();
   $('dirty').hidden = !dirty;
   $('save').disabled = !dirty;
+  // Python asks before closing the window while this is true.
+  if (dirty !== reportedDirty) {
+    reportedDirty = dirty;
+    api().set_dirty(dirty);
+  }
 }
 
 function clearPresets() {
@@ -87,8 +94,33 @@ function renderState(state) {
   refreshDirty();
 }
 
+// A whole number from a field, or null when it's empty, not a number, or below min.
+function wholeNumber(input) {
+  const raw = input.value.trim();
+  if (raw === '' || !/^-?\d+$/.test(raw)) return null;
+  const n = Number(raw);
+  const min = input.min === '' ? -Infinity : Number(input.min);
+  return Number.isSafeInteger(n) && n >= min ? n : null;
+}
+
+const PRESET_FIELDS = [
+  ['en-money', 'val-money', 'Money'],
+  ['en-mult', 'val-mult', 'Hand mult'],
+  ['en-limits', 'val-jokers', 'Joker slots'],
+  ['en-limits', 'val-cons', 'Consumable slots'],
+];
+
+// Returns the presets to apply, or null after showing which field needs fixing.
 function gather() {
-  const num = (id) => Number($(id).value);
+  for (const [toggle, id, label] of PRESET_FIELDS) {
+    if ($(toggle).checked && wholeNumber($(id)) === null) {
+      const min = $(id).min || '0';
+      setStatus(`${label} needs a whole number of ${min} or more.`, 'error');
+      $(id).focus();
+      return null;
+    }
+  }
+  const num = (id) => wholeNumber($(id));
   return {
     money: { enabled: $('en-money').checked, value: num('val-money') },
     chips: { enabled: $('en-chips').checked },
@@ -102,19 +134,29 @@ function gather() {
   };
 }
 
-async function loadPath(path) {
-  setStatus('Loading…');
-  const res = await api().load_save(path ?? null);
-  clearPresets();
-  jokersDirty = false;
-  if (!res.ok) {
-    renderState({ loaded: false });
-    setStatus(res.error, 'error');
-    return;
+// Loads, saves and joker actions in flight. Only one runs at a time, and the focus check
+// waits them out so it can't race a load.
+let ioBusy = 0;
+
+async function loadPath(path, doneMsg) {
+  closePicker(false);
+  ioBusy++;
+  try {
+    setStatus('Loading…');
+    const res = await api().load_save(path ?? null);
+    clearPresets();
+    jokersDirty = false;
+    if (!res.ok) {
+      renderState({ loaded: false });
+      setStatus(res.error, 'error');
+      return;
+    }
+    renderState(res.state);
+    await loadJokers();
+    setStatus(doneMsg || `Loaded ${res.state.profile}.`);
+  } finally {
+    ioBusy--;
   }
-  renderState(res.state);
-  await loadJokers();
-  setStatus(`Loaded ${res.state.profile}.`);
 }
 
 async function refreshProfiles() {
@@ -139,30 +181,118 @@ async function refreshProfiles() {
 }
 
 async function save() {
-  if (!currentPath || !isDirty()) return;
-  $('save').disabled = true;
-  setStatus('Saving…');
+  if (!currentPath || !isDirty() || ioBusy) return;
+  // Check the fields before asking anything; a bad value blocks the whole save.
+  const presets = presetsDirty() ? gather() : null;
+  if (presetsDirty() && !presets) return;
+  ioBusy++;
+  closePicker(false); // Ctrl+S from the joker search
   try {
-    if (presetsDirty()) {
-      const ap = await api().apply(gather());
+    const backup = $('backup').checked;
+    // Balatro rewrites save.jkr as you play; don't silently put an older run back.
+    let overwrite = false;
+    const disk = await api().save_status();
+    if (disk.changed) {
+      const choice = await askConflict(disk.missing, backup);
+      if (choice === 'reload') {
+        await loadPath(currentPath, 'Loaded the save Balatro wrote.');
+        return;
+      }
+      if (choice !== 'overwrite') {
+        setStatus('Not saved. Your edits are still here.');
+        return;
+      }
+      overwrite = true;
+    }
+    // Disabled only now, so focus can return to Save if the dialog is cancelled.
+    $('save').disabled = true;
+    setStatus('Saving…');
+    if (presets) {
+      const ap = await api().apply(presets);
       if (!ap.ok) {
         setStatus(ap.error, 'error');
         return;
       }
     }
-    const backup = $('backup').checked;
-    const sv = await api().save(backup);
+    const sv = await api().save(backup, overwrite);
     if (!sv.ok) {
-      setStatus(sv.error, 'error');
+      // conflict here means Balatro wrote in the moment between the check and the write.
+      setStatus(sv.conflict ? 'Balatro just updated the save. Press Save again to choose what to keep.' : sv.error, 'error');
       return;
     }
     clearPresets();
     jokersDirty = false;
     renderState(sv.state);
     await loadJokers();
-    setStatus('Saved.' + (backup ? ' Backup created next to the save file.' : ''), 'ok');
+    setStatus('Saved.' + (sv.backed_up ? ' Backup created next to the save file.' : ''), 'ok');
   } finally {
+    ioBusy--;
     refreshDirty();
+  }
+}
+
+// ---- keep in step with Balatro, which rewrites save.jkr while you play ----
+
+let conflictResolve = null;
+
+function askConflict(missing, backup) {
+  const p = (text) => {
+    const el = document.createElement('p');
+    el.textContent = text;
+    return el;
+  };
+  const body = $('conflict-text');
+  body.textContent = '';
+  if (missing) {
+    $('conflict-title').textContent = 'Save file removed';
+    body.append(
+      p('Balatro deleted this save since you opened it. It does that when a run ends.'),
+      p('Overwrite writes the run you opened, with your edits, back to disk. That brings the run back.'),
+    );
+  } else {
+    $('conflict-title').textContent = 'Save changed';
+    body.append(
+      p('Balatro updated this save since you opened it.'),
+      p("Reload loads Balatro's newer save and drops your unsaved edits."),
+      p(
+        "Overwrite writes the run you opened, with your edits, over Balatro's version." +
+          (backup ? " Balatro's version is backed up first." : ''),
+      ),
+    );
+  }
+  $('conflict-reload').hidden = missing;
+  openModal('conflict-modal', 'conflict-cancel');
+  return new Promise((resolve) => (conflictResolve = resolve));
+}
+
+function finishConflict(choice) {
+  const resolve = conflictResolve;
+  conflictResolve = null;
+  closeModal();
+  if (resolve) resolve(choice);
+}
+
+let syncing = false;
+
+// Called when the window comes back to the front.
+async function syncWithDisk() {
+  // Skip while a load or save runs (e.g. focus returning from the Open… picker).
+  if (!currentPath || syncing || ioBusy) return;
+  syncing = true;
+  try {
+    const path = currentPath;
+    const disk = await api().save_status();
+    if (ioBusy || currentPath !== path) return; // a load or save started meanwhile
+    if (!disk.loaded || !disk.changed) return;
+    if (disk.missing) {
+      setStatus('Balatro removed this save. It does that when a run ends.');
+    } else if (isDirty()) {
+      setStatus('Balatro updated this save. Save asks before overwriting it; Reload shows the new run.');
+    } else {
+      await loadPath(currentPath, 'Balatro updated the save. Reloaded.');
+    }
+  } finally {
+    syncing = false;
   }
 }
 
@@ -442,8 +572,8 @@ function buildJokerRow(j) {
   const acts = document.createElement('div');
   acts.className = 'joker-acts';
   acts.append(
-    button('Duplicate', 'quiet', async () => applyJokerResult(await api().joker_duplicate(j.index))),
-    button('Delete', 'quiet danger', async () => applyJokerResult(await api().joker_delete(j.index))),
+    button('Duplicate', 'quiet', () => jokerAction(() => api().joker_duplicate(j.index))),
+    button('Delete', 'quiet danger', () => jokerAction(() => api().joker_delete(j.index))),
   );
 
   const ctrls = document.createElement('div');
@@ -452,14 +582,19 @@ function buildJokerRow(j) {
   const typeSel = createJokerPicker({
     value: j.center || '',
     placeholder: 'Unknown joker',
-    onChange: async (key) => applyJokerResult(await api().joker_set_type(j.index, key, nameForKey(key))),
+    onChange: async (key) => {
+      if (!(await jokerAction(() => api().joker_set_type(j.index, key, nameForKey(key))))) {
+        typeSel._jpick.value = j.center || '';
+        renderTrigger(typeSel);
+      }
+    },
   });
 
   const edSel = document.createElement('select');
   for (const [val, label] of EDITION_OPTS) edSel.appendChild(new Option(label, val));
   edSel.value = j.edition || '';
   edSel.addEventListener('change', async () => {
-    applyJokerResult(await api().joker_set_edition(j.index, edSel.value));
+    if (!(await jokerAction(() => api().joker_set_edition(j.index, edSel.value)))) edSel.value = j.edition || '';
   });
 
   const sell = document.createElement('input');
@@ -468,7 +603,13 @@ function buildJokerRow(j) {
   sell.step = '1';
   if (j.sell_cost != null) sell.value = j.sell_cost;
   sell.addEventListener('change', async () => {
-    applyJokerResult(await api().joker_set_sell(j.index, Number(sell.value)));
+    const v = wholeNumber(sell);
+    if (v === null) {
+      sell.value = j.sell_cost ?? '';
+      setStatus('Sell value needs a whole number of 0 or more.', 'error');
+      return;
+    }
+    if (!(await jokerAction(() => api().joker_set_sell(j.index, v)))) sell.value = j.sell_cost ?? '';
   });
 
   const stickers = document.createElement('div');
@@ -480,7 +621,7 @@ function buildJokerRow(j) {
     cb.type = 'checkbox';
     cb.checked = (j.stickers || []).includes(s);
     cb.addEventListener('change', async () => {
-      applyJokerResult(await api().joker_set_sticker(j.index, s, cb.checked));
+      if (!(await jokerAction(() => api().joker_set_sticker(j.index, s, cb.checked)))) cb.checked = !cb.checked;
     });
     lbl.append(cb, capitalize(s));
     stickers.appendChild(lbl);
@@ -511,12 +652,28 @@ function renderJokers(jokers) {
 function applyJokerResult(res) {
   if (!res || !res.ok) {
     setStatus((res && res.error) || 'Joker edit failed.', 'error');
-    return;
+    return false;
   }
   jokersDirty = true;
   renderJokers(res.jokers);
   refreshDirty();
   setStatus('');
+  return true;
+}
+
+// One joker action at a time. Rows are addressed by index, so a second click before the
+// list redraws would hit the wrong joker (a double-click on Delete removed two).
+// Returns false when the action was skipped or failed, so the control can undo itself.
+async function jokerAction(call) {
+  if (ioBusy) return false;
+  ioBusy++;
+  try {
+    return applyJokerResult(await call());
+  } catch {
+    return applyJokerResult(null);
+  } finally {
+    ioBusy--;
+  }
 }
 
 async function loadJokers() {
@@ -562,15 +719,16 @@ function licenseEntryNode(e) {
   return wrap;
 }
 
-// ---- sheets (licenses, settings) ----
+// ---- sheets (licenses, settings, save changed) ----
 
-const MODALS = ['licenses-modal', 'settings-modal'];
-let modalReturnFocus = null;
+// Same order as in the DOM, so a later sheet stacks on top (Save changed can open over Settings via Ctrl+S).
+const MODALS = ['licenses-modal', 'settings-modal', 'conflict-modal'];
+const modalReturnFocus = {};
 
-const openModalId = () => MODALS.find((id) => !$(id).hidden) || null;
+const openModalId = () => [...MODALS].reverse().find((id) => !$(id).hidden) || null;
 
 function openModal(id, focusId) {
-  modalReturnFocus = document.activeElement;
+  modalReturnFocus[id] = document.activeElement;
   $(id).hidden = false;
   $(focusId).focus();
 }
@@ -579,8 +737,32 @@ function closeModal() {
   const id = openModalId();
   if (!id) return;
   $(id).hidden = true;
-  if (modalReturnFocus && modalReturnFocus.focus) modalReturnFocus.focus();
-  modalReturnFocus = null;
+  const back = modalReturnFocus[id];
+  delete modalReturnFocus[id];
+  if (back && back.focus) back.focus();
+  // Esc or a backdrop click on the save-changed sheet means Cancel.
+  if (id === 'conflict-modal' && conflictResolve) finishConflict(null);
+}
+
+const FOCUSABLE = 'button, input, select, summary, [href], [tabindex]:not([tabindex="-1"])';
+
+// Keep Tab inside the top sheet instead of wandering into the page behind it.
+function trapTab(e) {
+  const id = openModalId();
+  if (!id) return false;
+  const items = [...$(id).querySelectorAll(FOCUSABLE)].filter((el) => !el.disabled && el.offsetParent !== null);
+  if (!items.length) return false;
+  const first = items[0];
+  const last = items[items.length - 1];
+  const inside = $(id).contains(document.activeElement);
+  if (e.shiftKey && (!inside || document.activeElement === first)) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && (!inside || document.activeElement === last)) {
+    e.preventDefault();
+    first.focus();
+  }
+  return true;
 }
 
 async function openLicenses() {
@@ -740,6 +922,7 @@ function initAppFeel() {
       closeModal();
       return;
     }
+    if (e.key === 'Tab' && !picker.owner && trapTab(e)) return;
     const mod = e.ctrlKey || e.metaKey;
     const k = e.key.toLowerCase();
     if (mod && !e.shiftKey && !e.altKey && (k === 's' || k === 'o')) {
@@ -835,7 +1018,7 @@ window.addEventListener('pywebviewready', async () => {
   }
   $('joker-add-btn').addEventListener('click', async () => {
     const key = $('joker-add-select').value;
-    if (key) applyJokerResult(await api().joker_add(key, nameForKey(key)));
+    if (key) await jokerAction(() => api().joker_add(key, nameForKey(key)));
   });
 
   $('licenses-btn').addEventListener('click', openLicenses);
@@ -858,6 +1041,14 @@ window.addEventListener('pywebviewready', async () => {
   $('set-updates').addEventListener('change', (e) => changeSetting('check_updates', e.target.checked));
   $('update-check').addEventListener('click', () => checkForUpdates());
   $('settings-reset').addEventListener('click', resetSettings);
+
+  $('conflict-cancel').addEventListener('click', () => finishConflict(null));
+  $('conflict-reload').addEventListener('click', () => finishConflict('reload'));
+  $('conflict-overwrite').addEventListener('click', () => finishConflict('overwrite'));
+  window.addEventListener('focus', syncWithDisk);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') syncWithDisk();
+  });
 
   try {
     const saves = await refreshProfiles();

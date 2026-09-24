@@ -145,6 +145,16 @@ class JokerEditor(object):
             ability[sticker] = 'true' if on else 'false'
         elif on:
             ability.insert_entry(make_entry(f'["{sticker}"]=true,'))
+        if sticker == 'perishable' and on and 'perish_tally' not in ability:
+            # Balatro counts perishable jokers down with perish_tally; without it the
+            # end-of-round check compares nil and the game errors.
+            ability.insert_entry(make_entry(f'["perish_tally"]={self._perishable_rounds()},'))
+
+    def _perishable_rounds(self):
+        try:
+            return int(str(self.save_file['GAME']['perishable_rounds']))
+        except (ValueError, TypeError):
+            return 5
 
     def set_sell(self, pos, value):
         card = self._card(pos)

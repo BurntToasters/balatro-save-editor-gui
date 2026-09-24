@@ -383,6 +383,10 @@ html[data-ui='themed'] .sheet-head {
   border-bottom: 2px solid var(--inset);
 }
 
+html[data-ui='themed'] .sheet-foot {
+  border-top: 2px solid var(--inset);
+}
+
 html[data-ui='themed'] .sheet-head h2 {
   font-family: var(--pixel);
   font-weight: 500;

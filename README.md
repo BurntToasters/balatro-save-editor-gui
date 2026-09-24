@@ -42,7 +42,13 @@ npm run venv      # create .venv and install Python deps
 npm run dev       # launch the app from source
 npm test          # run the pytest suite
 npm run smoke:gui # drive the real window against a temp save
+npm run e2e       # every end-to-end suite; reports + screenshots in e2e-artifacts/
 ```
+
+`npm run e2e` covers save safety, the real window, the Windows installer (install, upgrade,
+uninstall; needs NSIS, `makensis` on PATH or `MAKENSIS=<path>`) and GPG signing with a throwaway
+key. What each check guards against is listed in
+[build-scripts/e2e/FAILURE_MODES.md](build-scripts/e2e/FAILURE_MODES.md).
 
 The website lives in `docs/` (GitHub Pages). Its domain comes from `docs/CNAME`:
 
@@ -68,7 +74,7 @@ See [RELEASING.md](RELEASING.md) for the signed, notarized, published release fl
 
 ## Safety
 
-Every write creates a timestamped `.bak` next to the save. After writing, the file is reloaded and re-validated (decompress → reparse → recompress must match), so a corrupt write is caught immediately. Editing save files is unsupported by the game; back up your saves.
+Every write creates a timestamped `.bak` next to the save (the 10 newest are kept). The new file is written beside the save and swapped in, so a crash mid-save leaves the old one intact. After writing, the file is reloaded and re-validated (decompress → reparse → recompress must match), so a corrupt write is caught immediately. Editing save files is unsupported by the game; back up your saves.
 
 ## License
 

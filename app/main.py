@@ -24,6 +24,7 @@ def main():
         zoomable=False,
     )
     api._window = window
+    window.events.closing += api.on_closing
     webview.start(func=_show_fallback, args=(window,), debug=debug)
 
 

@@ -736,6 +736,21 @@ button.danger {
   word-break: break-all;
 }
 
+/* ---- save-changed sheet ---- */
+
+.conflict-text p {
+  margin: 10px 0 0;
+  line-height: 1.45;
+}
+
+.sheet-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+}
+
 /* ---- licenses sheet ---- */
 
 .modal {

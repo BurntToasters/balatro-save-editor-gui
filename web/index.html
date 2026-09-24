@@ -168,7 +168,7 @@
           <div class="set-row">
             <label class="row-text" for="set-backup">
               <span class="row-title">Back up before saving</span>
-              <span class="row-sub">Writes a timestamped .bak copy next to your save first. Same as the checkbox by the Save button.</span>
+              <span class="row-sub">Writes a timestamped .bak copy next to your save first and keeps the 10 newest. Same as the checkbox by the Save button.</span>
             </label>
             <input type="checkbox" id="set-backup" checked />
           </div>
@@ -199,6 +199,20 @@
             </div>
             <button type="button" id="settings-reset" class="danger">Reset…</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="conflict-modal" class="modal" hidden>
+      <div class="sheet sheet-sm" role="alertdialog" aria-labelledby="conflict-title" aria-describedby="conflict-text">
+        <div class="sheet-head">
+          <h2 id="conflict-title">Save changed</h2>
+        </div>
+        <div id="conflict-text" class="sheet-body conflict-text"></div>
+        <div class="sheet-foot">
+          <button type="button" id="conflict-cancel">Cancel</button>
+          <button type="button" id="conflict-reload">Reload</button>
+          <button type="button" id="conflict-overwrite" class="primary">Overwrite</button>
         </div>
       </div>
     </div>

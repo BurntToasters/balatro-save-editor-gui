@@ -2,6 +2,8 @@ import datetime
 import os
 import re
 import shutil
+import tempfile
+import time
 import zlib
 
 from .token_iterator import TokenIterator
@@ -156,13 +158,26 @@ class MapStruct(Struct):
         return n
 
 
+BACKUPS_KEPT = 10
+REPLACE_TRIES = 5
+
+
+def _decode(raw):
+    # Vanilla saves are ASCII; modded ones can hold UTF-8 text. latin-1 maps every byte,
+    # so anything else still round-trips byte-exact.
+    try:
+        return raw.decode('utf-8'), 'utf-8'
+    except UnicodeDecodeError:
+        return raw.decode('latin-1'), 'latin-1'
+
+
 class BalatroSaveFile(object):
     def __init__(self, save_file_path):
         self.save_file_path = save_file_path
         self.save_file_data = self.read(self.save_file_path)
         self.structs = []
 
-        self.source_text = str(self.decompress(self.save_file_data), encoding='ascii')
+        self.source_text, self.encoding = _decode(self.decompress(self.save_file_data))
         tokens = re.split(TOKEN_RE, self.source_text)
         token_iterator = TokenIterator(tokens)
 
@@ -182,14 +197,57 @@ class BalatroSaveFile(object):
         save_file_backup_name = save_file_name + f'{now}.bak'
         save_file_backup_path = os.path.join(save_file_directory, save_file_backup_name)
         shutil.copy(self.save_file_path, save_file_backup_path)
+        self.prune_backups()
+
+    def prune_backups(self, keep=BACKUPS_KEPT):
+        # Only this save's own timestamped backups (save.jkr2026-09-24T130101.123456.bak);
+        # the timestamp sorts oldest first.
+        name = os.path.basename(self.save_file_path)
+        directory = os.path.dirname(self.save_file_path) or '.'
+        pattern = re.compile(re.escape(name) + r'\d{4}-\d{2}-\d{2}T\d{6}(\.\d+)?\.bak')
+        backups = sorted(f for f in os.listdir(directory) if pattern.fullmatch(f))
+        for old in backups[:-keep] if keep > 0 else backups:
+            try:
+                os.remove(os.path.join(directory, old))
+            except OSError:
+                pass
 
     def write(self, create_backup=True, dry_run=True):
-        save_file_data = self.compress(bytes(str(self), 'ascii'))
+        save_file_data = self.compress(str(self).encode(self.encoding))
         if create_backup:
             self.create_backup()
         if not dry_run:
-            with open(self.save_file_path, 'wb') as f:
-                f.write(save_file_data)
+            self._replace_atomically(save_file_data)
+
+    def _replace_atomically(self, data):
+        # Write a temp file beside the save, then swap it in: a crash mid-write leaves the
+        # old save intact, and Balatro never reads a half-written file.
+        # realpath: replace a symlink's target, not the link itself.
+        target = os.path.realpath(self.save_file_path)
+        directory = os.path.dirname(target)
+        fd, tmp = tempfile.mkstemp(prefix='.' + os.path.basename(target) + '.', suffix='.tmp', dir=directory)
+        try:
+            with os.fdopen(fd, 'wb') as f:
+                f.write(data)
+                f.flush()
+                os.fsync(f.fileno())
+            if os.path.exists(target):
+                shutil.copymode(target, tmp)  # mkstemp files start owner-only on POSIX
+            for attempt in range(REPLACE_TRIES):
+                try:
+                    os.replace(tmp, target)
+                    return
+                except PermissionError:
+                    # Windows refuses while another process (Balatro) has the file open.
+                    if attempt == REPLACE_TRIES - 1:
+                        raise
+                    time.sleep(0.1 * (attempt + 1))
+        except BaseException:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
 
     @staticmethod
     def decompress(save_file_data):

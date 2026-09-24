@@ -50,11 +50,13 @@ function gpgSign(file) {
   fs.rmSync(out, { force: true });
   const gpgArgs = ['--batch', '--yes', '--armor', '--detach-sign'];
   if (process.env.GPG_KEY_ID) gpgArgs.push('--local-user', process.env.GPG_KEY_ID);
-  if (process.env.GPG_PASSPHRASE) {
-    gpgArgs.push('--pinentry-mode', 'loopback', '--passphrase', process.env.GPG_PASSPHRASE);
+  const passphrase = process.env.GPG_PASSPHRASE;
+  if (passphrase) {
+    // Through stdin, not argv: command lines are visible to every process on the machine.
+    gpgArgs.push('--pinentry-mode', 'loopback', '--passphrase-fd', '0');
   }
   gpgArgs.push('--output', out, file);
-  execFileSync('gpg', gpgArgs, { stdio: 'pipe' });
+  execFileSync('gpg', gpgArgs, { stdio: 'pipe', input: passphrase ? `${passphrase}\n` : '' });
   return out;
 }
 
