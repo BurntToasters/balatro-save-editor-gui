@@ -37,6 +37,9 @@ samples/
 # OS / editor cruft
 .DS_Store
 
+# E2E reports and screenshots (npm run e2e)
+e2e-artifacts/
+
 # Logs
 logs/
 *.log

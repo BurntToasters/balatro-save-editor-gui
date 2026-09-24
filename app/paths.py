@@ -78,19 +78,31 @@ def candidate_bases():
     return _linux_bases()
 
 
+def _is_file(p):
+    try:
+        return p.is_file()
+    except OSError:
+        return False
+
+
+def _children(base):
+    # A folder we can't list (permissions, a dead mount) just has no saves.
+    try:
+        return sorted(c for c in base.iterdir() if c.is_dir())
+    except OSError:
+        return []
+
+
 def find_saves():
     saves = []
     for base in candidate_bases():
-        if not base.is_dir():
-            continue
         direct = base / SAVE_NAME
-        if direct.is_file():
+        if _is_file(direct):
             saves.append(direct)
-        for child in sorted(base.iterdir()):
-            if child.is_dir():
-                save = child / SAVE_NAME
-                if save.is_file():
-                    saves.append(save)
+        for child in _children(base):
+            save = child / SAVE_NAME
+            if _is_file(save):
+                saves.append(save)
     return _dedupe([s.resolve() for s in saves])
 
 

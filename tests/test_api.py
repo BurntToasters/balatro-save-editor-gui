@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 
 import app as app_pkg
@@ -108,6 +109,92 @@ def test_save_creates_backup(sample_save):
     api.save(create_backup=True)
     backups = list(Path(sample_save).parent.glob('save.jkr*.bak'))
     assert len(backups) == 1
+
+
+def _balatro_writes(path, dollars=999):
+    # Simulate Balatro rewriting the file with a different run.
+    other = Api()
+    other.load_save(str(path))
+    other.apply({'money': {'enabled': True, 'value': dollars}})
+    assert other.save(create_backup=False)['ok']
+
+
+def test_load_missing_file_is_friendly(tmp_path):
+    res = Api().load_save(str(tmp_path / 'save.jkr'))
+    assert res['ok'] is False
+    assert 'run ends' in res['error']
+
+
+def test_save_status_ignores_same_bytes_and_mtime(sample_save):
+    api = Api()
+    api.load_save(str(sample_save))
+    # Balatro rewriting identical bytes (or only touching the file) isn't a change.
+    data = Path(sample_save).read_bytes()
+    Path(sample_save).write_bytes(data)
+    st = os.stat(sample_save)
+    os.utime(sample_save, ns=(st.st_atime_ns, st.st_mtime_ns + 5_000_000_000))
+    assert api.save_status()['changed'] is False
+
+
+def test_save_status_sees_change_with_same_mtime(sample_save):
+    # exFAT keeps 2-second timestamps: a rewrite can land on the same mtime.
+    api = Api()
+    api.load_save(str(sample_save))
+    st = os.stat(sample_save)
+    _balatro_writes(sample_save)
+    os.utime(sample_save, ns=(st.st_atime_ns, st.st_mtime_ns))
+    assert api.save_status()['changed'] is True
+
+
+def test_save_status_unloaded():
+    assert Api().save_status() == {'loaded': False, 'changed': False, 'missing': False}
+
+
+def test_save_status_tracks_disk_changes(sample_save):
+    api = Api()
+    api.load_save(str(sample_save))
+    assert api.save_status() == {'loaded': True, 'changed': False, 'missing': False}
+    _balatro_writes(sample_save)
+    assert api.save_status()['changed'] is True
+    api.load_save(str(sample_save))
+    assert api.save_status()['changed'] is False
+    os.remove(sample_save)
+    assert api.save_status() == {'loaded': True, 'changed': True, 'missing': True}
+
+
+def test_save_refuses_when_changed_on_disk(sample_save):
+    api = Api()
+    api.load_save(str(sample_save))
+    api.apply({'money': {'enabled': True, 'value': 12345}})
+    _balatro_writes(sample_save)
+    before = Path(sample_save).read_bytes()
+    res = api.save(create_backup=True)
+    assert res['ok'] is False and res['conflict'] is True and res['missing'] is False
+    assert Path(sample_save).read_bytes() == before
+    assert not list(Path(sample_save).parent.glob('save.jkr*.bak'))
+
+
+def test_save_overwrite_after_change(sample_save):
+    api = Api()
+    api.load_save(str(sample_save))
+    api.apply({'money': {'enabled': True, 'value': 12345}})
+    _balatro_writes(sample_save)
+    res = api.save(create_backup=True, overwrite=True)
+    assert res['ok'] is True and res['backed_up'] is True
+    assert res['state']['money'] == '12345'
+    assert len(list(Path(sample_save).parent.glob('save.jkr*.bak'))) == 1
+    # Our own write is the new baseline, not a change by Balatro.
+    assert api.save_status()['changed'] is False
+
+
+def test_save_overwrite_restores_deleted_save(sample_save):
+    api = Api()
+    api.load_save(str(sample_save))
+    os.remove(sample_save)
+    res = api.save(create_backup=True, overwrite=True)
+    assert res['ok'] is True and res['backed_up'] is False
+    assert Path(sample_save).exists()
+    assert api.save_status()['changed'] is False
 
 
 def test_detect_saves(monkeypatch, tmp_path):

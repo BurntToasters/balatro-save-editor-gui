@@ -1,10 +1,20 @@
 ## ⬇️ Downloads
 
-- **Windows - Installer:** [<u>x64</u>](https://github.com/BurntToasters/balatro-save-editor-gui/releases/download/v1.0.0/Balatro-Save-Editor-1.0.0-win-x64.exe) ([sig](https://github.com/BurntToasters/balatro-save-editor-gui/releases/download/v1.0.0/Balatro-Save-Editor-1.0.0-win-x64.exe.asc))
-- **macOS - arm64 DMG:** [<u>arm64</u>](https://github.com/BurntToasters/balatro-save-editor-gui/releases/download/v1.0.0/Balatro-Save-Editor-1.0.0-mac-arm64.dmg) ([sig](https://github.com/BurntToasters/balatro-save-editor-gui/releases/download/v1.0.0/Balatro-Save-Editor-1.0.0-mac-arm64.dmg.asc))
-- **Linux - AppImage:** [<u>x64</u>](https://github.com/BurntToasters/balatro-save-editor-gui/releases/download/v1.0.0/Balatro-Save-Editor-1.0.0-linux-x64.AppImage) ([sig](https://github.com/BurntToasters/balatro-save-editor-gui/releases/download/v1.0.0/Balatro-Save-Editor-1.0.0-linux-x64.AppImage.asc))
+- **Windows - Installer:** [<u>x64</u>](https://github.com/BurntToasters/balatro-save-editor-gui/releases/download/v1.0.1/Balatro-Save-Editor-1.0.1-win-x64.exe) ([sig](https://github.com/BurntToasters/balatro-save-editor-gui/releases/download/v1.0.1/Balatro-Save-Editor-1.0.1-win-x64.exe.asc))
+- **macOS - arm64 DMG:** [<u>arm64</u>](https://github.com/BurntToasters/balatro-save-editor-gui/releases/download/v1.0.1/Balatro-Save-Editor-1.0.1-mac-arm64.dmg) ([sig](https://github.com/BurntToasters/balatro-save-editor-gui/releases/download/v1.0.1/Balatro-Save-Editor-1.0.1-mac-arm64.dmg.asc))
+- **Linux - AppImage:** [<u>x64</u>](https://github.com/BurntToasters/balatro-save-editor-gui/releases/download/v1.0.1/Balatro-Save-Editor-1.0.1-linux-x64.AppImage) ([sig](https://github.com/BurntToasters/balatro-save-editor-gui/releases/download/v1.0.1/Balatro-Save-Editor-1.0.1-linux-x64.AppImage.asc))
 
 *GPG Pubkey: https://tuxedo.rosie.run/GPG/BurntToasters_0xF2FBC20F_public.asc*
+
+## 1.0.1
+* **Saving:** `BSE GUI` now notices when Balatro changes your save while the app is open. It reloads automatically, or asks before overwriting if you have unsaved edits.
+* **Safer saves:** Saves are now written to a temporary file first and then swapped in, so a crash mid-save can't corrupt your save. Backups are capped at the 10 newest per save.
+* **Unsaved changes:** Closing the app with unsaved edits now asks before discarding them.
+* **Jokers:** Fixed double-clicking Delete or Duplicate removing/adding two jokers.
+  - Adding the Perishable sticker now also sets how many rounds the joker has left, so Balatro doesn't error at the end of the round.
+* **Modded saves:** Saves containing non-English text (e.g. modded joker names) now open and save correctly.
+* **Windows installer:** Uninstalling now only removes the app's own files, installs always go into their own `Balatro Save Editor` folder, and shortcuts are created for all users. Upgrading removes old version files and asks you to close the app if it's running.
+* **Misc:** Empty or invalid number fields now show an error instead of saving 0, plus other small fixes and new end-to-end tests.
 
 ## 1.0.0
 Welcome to the 1.0.0 release of Balatro Save Editor (GUI)!

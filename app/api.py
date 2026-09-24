@@ -1,8 +1,23 @@
+import hashlib
+import os
 import subprocess
 import sys
+import threading
 
 from . import __version__, paths, resources, settings, updates
 from .editor import BalatroSaveEditor, JokerEditor, joker_catalog
+
+
+def _disk_stamp(path):
+    """Hash of the file's bytes, or None when it can't be read (e.g. Balatro deleted it).
+
+    Content, not mtime: exFAT/FAT only keep 2-second timestamps, and saves are a few KB.
+    """
+    try:
+        with open(path, 'rb') as f:
+            return hashlib.sha256(f.read()).hexdigest()
+    except OSError:
+        return None
 
 
 class Api:
@@ -13,8 +28,39 @@ class Api:
         self._debug = debug
         self.editor = None
         self.save_path = None
+        self._stamp = None  # disk stamp of save_path when it was last read or written
+        self._dirty = False  # the page has unsaved edits (it reports every change)
+        self._force_close = False
+        self._asking_close = False
 
     # ---- window ----
+
+    def set_dirty(self, dirty):
+        self._dirty = bool(dirty)
+        return True
+
+    def on_closing(self):
+        # window.events.closing: returning False keeps the window open.
+        # pywebview calls this on the GUI thread, and on macOS/GTK a confirmation dialog waits
+        # for that same thread, so asking here would freeze. Cancel now, ask from a worker,
+        # and close for real if the user says yes.
+        if self._force_close or not self._dirty or self._window is None:
+            return True
+        if not self._asking_close:
+            self._asking_close = True
+            threading.Thread(target=self._confirm_close, daemon=True).start()
+        return False
+
+    def _confirm_close(self):
+        try:
+            discard = self._window.create_confirmation_dialog(
+                'Discard changes?', 'You have unsaved changes. Close Balatro Save Editor and discard them?'
+            )
+        finally:
+            self._asking_close = False
+        if discard:
+            self._force_close = True
+            self._window.destroy()
 
     def ui_ready(self):
         # Window starts hidden so the first paint isn't a csgo flashbang.
@@ -43,6 +89,7 @@ class Api:
         except OSError as e:
             return {'ok': False, 'error': f'Could not restart: {e}'}
         if self._window is not None:
+            self._force_close = True  # the page already warned about unsaved changes
             self._window.destroy()
         return {'ok': True}
 
@@ -113,13 +160,29 @@ class Api:
                 if default is None:
                     return {'ok': False, 'error': 'No Balatro save found. Use Open to pick a file.'}
                 path = str(default)
+            if not os.path.exists(path):
+                raise FileNotFoundError(
+                    'This save file is gone. Balatro deletes save.jkr when a run ends; '
+                    'start a run to make a new one.'
+                )
+            # Stamp before reading: if Balatro writes mid-read, the next check sees a change.
+            stamp = _disk_stamp(path)
             self.editor = BalatroSaveEditor(path)
             self.save_path = path
+            self._stamp = stamp
             return {'ok': True, 'state': self.get_state()}
         except Exception as e:
             self.editor = None
             self.save_path = None
+            self._stamp = None
             return {'ok': False, 'error': str(e)}
+
+    def save_status(self):
+        """Has the loaded save changed on disk (e.g. Balatro wrote it) since we read it?"""
+        if self.editor is None:
+            return {'loaded': False, 'changed': False, 'missing': False}
+        now = _disk_stamp(self.save_path)
+        return {'loaded': True, 'changed': now != self._stamp, 'missing': now is None}
 
     def get_state(self):
         if self.editor is None:
@@ -163,14 +226,26 @@ class Api:
         except Exception as e:
             return {'ok': False, 'error': str(e)}
 
-    def save(self, create_backup=True):
+    def save(self, create_backup=True, overwrite=False):
         if self.editor is None:
             return {'ok': False, 'error': 'No save loaded.'}
+        status = self.save_status()
+        if status['changed'] and not overwrite:
+            return {
+                'ok': False,
+                'conflict': True,
+                'missing': status['missing'],
+                'error': 'Balatro updated this save since you opened it.',
+            }
         try:
-            self.editor.balatro_save_file.write(create_backup=create_backup, dry_run=False)
+            # A save Balatro deleted (run ended) has nothing to back up.
+            backup = create_backup and not status['missing']
+            self.editor.balatro_save_file.write(create_backup=backup, dry_run=False)
             # Reload from disk: re-runs validate() to confirm the written file round-trips.
+            stamp = _disk_stamp(self.save_path)
             self.editor = BalatroSaveEditor(self.save_path)
-            return {'ok': True, 'state': self.get_state()}
+            self._stamp = stamp
+            return {'ok': True, 'state': self.get_state(), 'backed_up': backup}
         except Exception as e:
             return {'ok': False, 'error': str(e)}
 

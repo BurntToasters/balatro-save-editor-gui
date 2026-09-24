@@ -10,7 +10,9 @@ Builds are per-platform: run the matching command on a machine of that OS/arch
 - `.env` filled in (see `.env.example`)
 - [GitHub CLI](https://cli.github.com/) installed and signed in on each release
   machine: `gh auth login`. `GH_TOKEN` / `GITHUB_TOKEN` are ignored by `publish`.
-- A GPG secret key (`GPG_KEY_ID`)
+- A GPG secret key (`GPG_KEY_ID`). `GPG_PASSPHRASE` reaches gpg on stdin, never on its
+  command line. On Windows run releases from PowerShell: Git Bash puts its own MSYS `gpg`
+  first on PATH, which doesn't see the Gpg4win keyring.
 - macOS: an Apple Silicon Mac with a native arm64 Python (Intel Macs aren't supported);
   a "Developer ID Application" cert in the keychain; notarytool credentials
 - Windows: [NSIS](https://nsis.sourceforge.io/) 3.08+ (`makensis` on PATH); the Azure
@@ -88,5 +90,6 @@ macOS notarization: `xcrun stapler validate <installer>.dmg`
 ```bash
 npm run publish:dry   # show repo/tag/assets without uploading
 npm run test:scripts  # unit tests for the release helpers
+npm run e2e           # end-to-end suites, incl. a real install/upgrade/uninstall of a test installer
 npm run clean         # remove build/ dist/ release/
 ```

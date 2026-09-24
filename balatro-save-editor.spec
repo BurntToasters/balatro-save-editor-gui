@@ -1,6 +1,7 @@
 # PyInstaller spec - onedir build, bundles web/ assets.
 import json
 import os
+import re
 import sys
 import tempfile
 
@@ -11,6 +12,10 @@ BUNDLE_ID = 'com.burnttoasters.balatrosaveeditor'
 with open('package.json', encoding='utf-8') as _f:
     _pkg = json.load(_f)
 APP_VERSION = _pkg.get('version', '0.0.0')
+# Numeric x.y.z core: Windows version resources and macOS bundle versions take numbers only,
+# so a pre-release like 1.1.0-beta.1 uses 1.1.0 there (the text fields keep the full version).
+_core = re.match(r'\d+\.\d+\.\d+', APP_VERSION)
+APP_VERSION_CORE = _core.group(0) if _core else '0.0.0'
 
 icon = None
 target_arch = None
@@ -20,7 +25,7 @@ if sys.platform == 'win32':
     icon = 'icon/icon.ico'
     # Build a temporary Windows version-resource file so Explorer / About shows
     # the real version rather than the PyInstaller default.
-    _parts = APP_VERSION.split('.')
+    _parts = APP_VERSION_CORE.split('.')
     while len(_parts) < 4:
         _parts.append('0')
     _vt = ', '.join(_parts[:4])  # e.g. "0,2,0,0"
@@ -94,8 +99,8 @@ if sys.platform == 'darwin':
         info_plist={
             'CFBundleName': MAC_APP_NAME,
             'CFBundleDisplayName': MAC_APP_NAME,
-            'CFBundleShortVersionString': APP_VERSION,
-            'CFBundleVersion': APP_VERSION,
+            'CFBundleShortVersionString': APP_VERSION_CORE,
+            'CFBundleVersion': APP_VERSION_CORE,
             'NSHighResolutionCapable': True,
         },
     )
