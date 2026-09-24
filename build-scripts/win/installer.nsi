@@ -13,6 +13,11 @@ RequestExecutionLevel admin
 !define MUI_UNICON "${ICON}"
 !define UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}"
 
+; Signed builds (installer-nsis.js --sign) pass an include that Authenticode-signs Uninstall.exe.
+!ifdef SIGN_INCLUDE
+  !include "${SIGN_INCLUDE}"
+!endif
+
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES

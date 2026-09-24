@@ -13,7 +13,9 @@ Builds are per-platform: run the matching command on a machine of that OS/arch
 - A GPG secret key (`GPG_KEY_ID`)
 - macOS: an Apple Silicon Mac with a native arm64 Python (Intel Macs aren't supported);
   a "Developer ID Application" cert in the keychain; notarytool credentials
-- Windows: [NSIS](https://nsis.sourceforge.io/) (`makensis` on PATH)
+- Windows: [NSIS](https://nsis.sourceforge.io/) 3.08+ (`makensis` on PATH); the Azure
+  Artifact Signing `AZURE_*` values in `.env`; then once, as Administrator:
+  `npm run setup:win:artifact-signing` (installs Microsoft's Artifact Signing Client Tools)
 - Linux: `appimagetool` on PATH
 
 ## Bump the version
@@ -22,7 +24,9 @@ Builds are per-platform: run the matching command on a machine of that OS/arch
 npm run bump patch        # or minor | major | 1.2.3
 ```
 
-Updates `package.json` and `app/__init__.py`. The release tag is `v<version>`.
+Updates `package.json`, then runs `npm run sync`: `app/__init__.py` and the download
+and `.asc` links in the `## Downloads` section of `CHANGELOG.md` follow the new version.
+The release tag is `v<version>`.
 
 ## Release per platform
 
@@ -38,8 +42,10 @@ Each command runs, in order:
 | --- | --- | --- | --- |
 | `build` (PyInstaller) | ✓ | ✓ | ✓ |
 | `sign:mac` (codesign, hardened runtime) | ✓ | – | – |
-| `dist:*` (installer) | `.dmg` | `.exe` | `.AppImage` |
+| `sign:win` (Authenticode on the app `.exe`) | – | ✓ | – |
+| `dist:*` (installer) | `.dmg` | `.exe` (uninstaller + installer Authenticode-signed) | `.AppImage` |
 | `notarize:mac` (notarytool + staple) | ✓ | – | – |
+| `verify:win` (valid, timestamped, expected publisher + Subject DN) | – | ✓ | – |
 | `sign:gpg` (detached `.asc` + `SHA256SUMS-<platform>.txt`) | ✓ | ✓ | ✓ |
 | `publish` (draft GitHub release upload) | ✓ | ✓ | ✓ |
 
@@ -47,8 +53,15 @@ Each command runs, in order:
 `web/licenses.json` (bundled into the app for the in-app **Licenses** viewer) and
 `THIRD_PARTY_NOTICES.txt` at the repo root.
 
-Windows is GPG-signed only (no Authenticode). The release is left as a **draft**
-on GitHub — review and publish it manually.
+Windows binaries are Authenticode-signed through Azure Artifact Signing before GPG
+signing, so the `.asc` and checksums cover the signed installer. Every signature is
+checked for a valid chain, an RFC 3161 timestamp, and the exact
+`AZURE_ARTIFACT_SIGNING_PUBLISHER` / `AZURE_ARTIFACT_SIGNING_PUBLISHER_DN`.
+`SKIP_WIN_CODESIGN=1` builds unsigned, and only for pre-release versions
+(`1.2.0-beta.1`); stable `x.y.z` versions refuse it. `npm run dist:win` (no signing)
+is still available for local test builds.
+
+The release is left as a **draft** on GitHub — review and publish it manually.
 
 ## Artifacts
 

@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { ROOT } = require('./venv-python');
+const { syncVersion } = require('./sync-version');
 
 const arg = process.argv[2];
 if (!arg) {
@@ -27,11 +28,5 @@ const prev = pkg.version;
 pkg.version = next;
 fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
 
-const initPath = path.join(ROOT, 'app', '__init__.py');
-const init = fs.readFileSync(initPath, 'utf8').replace(
-  /__version__\s*=\s*["'][^"']+["']/,
-  `__version__ = "${next}"`,
-);
-fs.writeFileSync(initPath, init);
-
-console.log(`Version: ${prev} -> ${next} (package.json + app/__init__.py)`);
+console.log(`Version: ${prev} -> ${next}`);
+syncVersion();
