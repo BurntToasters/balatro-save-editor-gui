@@ -29,6 +29,7 @@
     "venv": "node build-scripts/setup-venv.js",
     "dev": "node build-scripts/venv-python.js -m app.main",
     "test": "node build-scripts/venv-python.js -m pytest",
+    "test:scripts": "node --test build-scripts/*.test.js",
     "smoke:gui": "node build-scripts/venv-python.js build-scripts/smoke-gui.py",
     "licenses": "node build-scripts/licenses.js",
     "prebuild": "npm run licenses",
@@ -44,9 +45,7 @@
     "publish": "dotenv -e .env -- node build-scripts/publish.js",
     "publish:dry": "node build-scripts/publish.js --dry-run",
     "release:mac": "npm run build && npm run sign:mac && npm run dist:mac && npm run notarize:mac && npm run sign:gpg && npm run publish",
-    "release:mac:universal": "cross-env BALATRO_MAC_ARCH=universal2 BALATRO_ARCH=universal npm run release:mac",
     "release:mac:ssh": "bash build-scripts/mac-keychain-ssh.sh && npm run release:mac",
-    "release:mac:universal:ssh": "bash build-scripts/mac-keychain-ssh.sh && npm run release:mac:universal",
     "mac:ssh:keychain": "bash build-scripts/mac-keychain-ssh.sh",
     "release:win": "npm run build && npm run dist:win && npm run sign:gpg && npm run publish",
     "release:linux": "npm run build && npm run dist:linux && npm run sign:gpg && npm run publish",
@@ -55,7 +54,6 @@
     "clean": "node build-scripts/clean.js"
   },
   "devDependencies": {
-    "cross-env": "^10.1.0",
     "dotenv-cli": "^11.0.0"
   },
   "repository": {

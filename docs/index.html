@@ -3,135 +3,239 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Balatro Save Editor GUI - Download for Windows, macOS, Linux</title>
+    <title>Balatro Save Editor — edit save.jkr on Windows, macOS and Linux</title>
     <meta
       name="description"
-      content="Balatro Save Editor GUI is a cross-platform desktop tool for editing Balatro save.jkr files with backup safety and validation. Download installers for Windows, macOS, and Linux."
+      content="Free, open-source desktop editor for Balatro save.jkr files. Change money, beat the current blind, set hand mult, raise slot limits and edit jokers. Backs up and validates every write."
     />
-    <meta
-      name="keywords"
-      content="Balatro Save Editor, Balatro save.jkr editor, Balatro GUI, Balatro save file editor, Balatro tools"
-    />
-    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
     <link rel="canonical" href="https://burnttoasters.github.io/balatro-save-editor-gui/" />
-    <meta name="theme-color" content="#081326" />
+    <meta name="theme-color" content="#1d3532" />
+    <link rel="icon" type="image/png" href="img/icon.png" />
+    <link rel="apple-touch-icon" href="img/icon.png" />
 
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Balatro Save Editor GUI" />
-    <meta property="og:title" content="Balatro Save Editor GUI" />
+    <meta property="og:site_name" content="Balatro Save Editor" />
+    <meta property="og:title" content="Balatro Save Editor" />
     <meta
       property="og:description"
-      content="Edit Balatro save.jkr files with a safe desktop GUI. Supports Windows, macOS, and Linux."
+      content="Edit your Balatro run: money, blinds, hand mult, slot limits and jokers. Windows, macOS and Linux."
     />
     <meta property="og:url" content="https://burnttoasters.github.io/balatro-save-editor-gui/" />
-    <meta
-      property="og:image"
-      content="https://raw.githubusercontent.com/BurntToasters/balatro-save-editor-gui/main/balatro_1.jpg"
-    />
-
+    <meta property="og:image" content="https://burnttoasters.github.io/balatro-save-editor-gui/img/app-run.png" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Balatro Save Editor GUI" />
+    <meta name="twitter:title" content="Balatro Save Editor" />
     <meta
       name="twitter:description"
-      content="Cross-platform Balatro save editor with automatic backups and validation."
+      content="Edit your Balatro run: money, blinds, hand mult, slot limits and jokers. Windows, macOS and Linux."
     />
-    <meta
-      name="twitter:image"
-      content="https://raw.githubusercontent.com/BurntToasters/balatro-save-editor-gui/main/balatro_1.jpg"
-    />
+    <meta name="twitter:image" content="https://burnttoasters.github.io/balatro-save-editor-gui/img/app-run.png" />
 
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
-        "name": "Balatro Save Editor GUI",
-        "applicationCategory": "GameApplication",
-        "operatingSystem": "Windows, macOS, Linux",
-        "description": "Cross-platform desktop tool for editing Balatro save.jkr files with backup safety and validation.",
+        "name": "Balatro Save Editor",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Windows, macOS (Apple Silicon), Linux",
+        "description": "Desktop editor for Balatro save.jkr files with automatic backups and write validation.",
         "url": "https://burnttoasters.github.io/balatro-save-editor-gui/",
         "downloadUrl": "https://github.com/BurntToasters/balatro-save-editor-gui/releases/latest",
         "codeRepository": "https://github.com/BurntToasters/balatro-save-editor-gui",
         "license": "https://github.com/BurntToasters/balatro-save-editor-gui/blob/main/LICENSE",
-        "author": {
-          "@type": "Person",
-          "name": "BurntToasters"
-        }
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "author": { "@type": "Person", "name": "BurntToasters" }
       }
     </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
+    <script src="site.js" defer></script>
   </head>
   <body>
-    <div class="bg-glow bg-glow-a" aria-hidden="true"></div>
-    <div class="bg-glow bg-glow-b" aria-hidden="true"></div>
-
-    <header class="hero wrap">
-      <p class="eyebrow">Stable release 0.2.4</p>
-      <h1>Balatro Save Editor GUI</h1>
-      <p class="lead">
-        A desktop Balatro save file editor for <strong>save.jkr</strong> on Windows, macOS, and Linux.
-        Built for fast edits, safety backups, and byte-accurate validation.
-      </p>
-      <div class="cta-row">
-        <a class="btn btn-primary" href="https://github.com/BurntToasters/balatro-save-editor-gui/releases/latest">Download Latest Release</a>
-        <a class="btn btn-ghost" href="https://github.com/BurntToasters/balatro-save-editor-gui">View Source on GitHub</a>
-      </div>
+    <header class="topbar wrap">
+      <a class="brand" href="./">
+        <img src="img/icon.png" alt="" width="32" height="32" />
+        <span>Balatro Save Editor</span>
+      </a>
+      <a class="btn btn-grey btn-sm" href="https://github.com/BurntToasters/balatro-save-editor-gui">GitHub</a>
     </header>
 
-    <main class="wrap">
-      <section class="card">
-        <h2>Why This Balatro Save Editor</h2>
-        <ul>
-          <li>Edit money, chips, hand multipliers, and slot limits.</li>
-          <li>Manage joker metadata and experimental joker operations.</li>
-          <li>Create a timestamped .bak before every write.</li>
-          <li>Validate every write by reload and recompression checks.</li>
-        </ul>
+    <main>
+      <section class="hero wrap">
+        <div class="hero-text">
+          <h1>Balatro Save Editor</h1>
+          <p class="lead">
+            Edit your current Balatro run: money, the blind you're on, hand mult, slot limits and every joker you're
+            holding. Your save is backed up first and checked after every write.
+          </p>
+          <div class="cta">
+            <a id="dl-main" class="btn btn-red" href="https://github.com/BurntToasters/balatro-save-editor-gui/releases/latest">
+              Download
+            </a>
+            <a class="btn btn-grey" href="#download">All platforms</a>
+          </div>
+          <p id="dl-meta" class="meta">Free and open source · Windows, macOS, Linux</p>
+        </div>
+        <figure class="shot">
+          <img
+            src="img/app-run.png"
+            width="984"
+            height="661"
+            alt="Balatro Save Editor window with the money and beat-blind options ticked"
+          />
+        </figure>
       </section>
 
-      <section class="grid">
-        <article class="card">
-          <h2>Supported Platforms</h2>
-          <p>Installers are available for:</p>
-          <ul>
-            <li>Windows x64 (.exe)</li>
-            <li>macOS universal (.dmg)</li>
-            <li>Linux x64 (.AppImage)</li>
-          </ul>
-        </article>
-
-        <article class="card">
-          <h2>Common Save Locations</h2>
-          <ul>
-            <li>Windows: %APPDATA%/Balatro/&lt;profile&gt;/save.jkr</li>
-            <li>macOS: ~/Library/Application Support/Balatro/&lt;profile&gt;/save.jkr</li>
-            <li>Linux: Steam Proton compatdata/2379780/...</li>
-          </ul>
-        </article>
+      <section class="wrap" aria-labelledby="edits-h">
+        <h2 id="edits-h">What you can change</h2>
+        <div class="panel hands">
+          <div class="hand">
+            <div class="hand-name">Money</div>
+            <p>Set your dollars to any amount.</p>
+            <div class="chips"><span class="pill gold">$19,999</span></div>
+          </div>
+          <div class="hand">
+            <div class="hand-name">Beat the blind</div>
+            <p>Puts your chips one short of the current blind, so any hand clears it.</p>
+            <div class="chips"><span class="pill blue">10,999</span><span class="x">/</span><span class="pill grey">11,000</span></div>
+          </div>
+          <div class="hand">
+            <div class="hand-name">Hand mult</div>
+            <p>Sets the mult for every poker hand at once.</p>
+            <div class="chips"><span class="pill blue">Chips</span><span class="x">×</span><span class="pill red">10,000</span></div>
+          </div>
+          <div class="hand">
+            <div class="hand-name">Slot limits</div>
+            <p>Raise how many jokers and consumables you can hold.</p>
+            <div class="chips"><span class="pill grey">20 jokers</span><span class="pill grey">10 consumables</span></div>
+          </div>
+          <div class="hand">
+            <div class="hand-name">Eternal</div>
+            <p>Strips the Eternal sticker so those jokers can be sold or destroyed again.</p>
+            <div class="chips"><span class="pill grey strike">Eternal</span></div>
+          </div>
+          <div class="hand">
+            <div class="hand-name">Jokers</div>
+            <p>Change any joker's type, edition, stickers and sell value. Add, duplicate or delete jokers.</p>
+            <div class="chips">
+              <span class="pill ed-foil">Foil</span><span class="pill ed-holo">Holo</span><span class="pill ed-poly">Polychrome</span><span class="pill ed-neg">Negative</span>
+            </div>
+          </div>
+        </div>
       </section>
 
-      <section class="card faq">
-        <h2>FAQ</h2>
-        <h3>Is this a Balatro save.jkr editor GUI?</h3>
-        <p>Yes. It is a desktop GUI for editing Balatro save.jkr files.</p>
-        <h3>Is it safe to use?</h3>
-        <p>Each write creates a backup and then validates the resulting save file.</p>
+      <section class="wrap split" aria-labelledby="jokers-h">
+        <figure class="shot">
+          <img
+            src="img/app-jokers.png"
+            width="984"
+            height="661"
+            loading="lazy"
+            alt="Joker list showing type, edition, sell value and sticker controls for five jokers"
+          />
+        </figure>
+        <div>
+          <h2 id="jokers-h">Nothing is written until you hit Save</h2>
+          <p>
+            Tick the changes you want, edit your jokers, then save once. Close Balatro first — the game rewrites
+            <code>save.jkr</code> while it runs and can overwrite your edits.
+          </p>
+          <div class="panel safe">
+            <h3>Backed up</h3>
+            <p>By default, a timestamped <code>.bak</code> copy is written next to your save before anything changes.</p>
+          </div>
+          <div class="panel safe">
+            <h3>Checked</h3>
+            <p>
+              After writing, the file is read back and parsed again. If it doesn't reproduce exactly, you get an error
+              straight away instead of a broken run later.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="download" class="wrap" aria-labelledby="download-h">
+        <h2 id="download-h">Download <span id="dl-version" class="muted"></span></h2>
+        <div class="panel table-wrap">
+          <table class="dl">
+            <thead>
+              <tr>
+                <th scope="col">Platform</th>
+                <th scope="col">Installer</th>
+                <th scope="col">Signature</th>
+                <th scope="col">Checksums</th>
+              </tr>
+            </thead>
+            <tbody id="dl-rows">
+              <tr>
+                <td>Windows</td>
+                <td colspan="3" rowspan="3" class="fallback">
+                  <a href="https://github.com/BurntToasters/balatro-save-editor-gui/releases/latest">Get the latest release on GitHub</a>
+                </td>
+              </tr>
+              <tr><td>macOS</td></tr>
+              <tr><td>Linux</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="note">The macOS build is for Apple Silicon Macs (M1 and newer). Intel Macs aren't supported.</p>
+
+        <h3>Where your save lives</h3>
+        <p>The app finds it on its own. If it doesn't, use <b>Open…</b> and pick <code>save.jkr</code> yourself.</p>
+        <dl class="paths panel">
+          <dt>Windows</dt>
+          <dd><code>%APPDATA%\Balatro\&lt;profile&gt;\save.jkr</code></dd>
+          <dt>macOS</dt>
+          <dd><code>~/Library/Application Support/Balatro/&lt;profile&gt;/save.jkr</code></dd>
+          <dt>Linux</dt>
+          <dd><code>…/steamapps/compatdata/2379780/pfx/…/Balatro/&lt;profile&gt;/save.jkr</code> (Proton)</dd>
+        </dl>
+      </section>
+
+      <section class="wrap faq" aria-labelledby="faq-h">
+        <h2 id="faq-h">Questions</h2>
+        <details class="panel">
+          <summary>Will this mess up my unlocks or profile?</summary>
+          <p>
+            No. <code>save.jkr</code> only holds the run you're in. Unlocks and profile stats live in separate files
+            that this app doesn't open.
+          </p>
+        </details>
+        <details class="panel">
+          <summary>Something went wrong. How do I undo it?</summary>
+          <p>
+            Unless you turned backups off, each save leaves a file like <code>save.jkr2026-09-23T224512….bak</code> next to
+            your save. Delete the broken <code>save.jkr</code> and rename the newest backup to <code>save.jkr</code>.
+          </p>
+        </details>
+        <details class="panel">
+          <summary>Is it official?</summary>
+          <p>
+            No. It's a fan-made tool, not affiliated with LocalThunk or Playstack. Editing saves isn't supported by the
+            game, so keep your own backups too.
+          </p>
+        </details>
+        <details class="panel">
+          <summary>Who made it?</summary>
+          <p>
+            BurntToasters built the desktop app on top of
+            <a href="https://github.com/problemsalved/balatro_save_editor">problemsalved's command-line editor</a>,
+            which does the save parsing. It's open source under MPL-2.0.
+          </p>
+        </details>
       </section>
     </main>
 
     <footer class="wrap footer">
-      <p>
-        Forked from
-        <a href="https://github.com/problemsalved/balatro_save_editor">problemsalved/balatro_save_editor</a>
-        and licensed under
-        <a href="https://github.com/BurntToasters/balatro-save-editor-gui/blob/main/LICENSE">MPL-2.0</a>.
-      </p>
+      <span>MPL-2.0 · Forked from <a href="https://github.com/problemsalved/balatro_save_editor">problemsalved/balatro_save_editor</a></span>
+      <span>
+        <a href="https://github.com/BurntToasters/balatro-save-editor-gui">Source</a> ·
+        <a href="https://github.com/BurntToasters/balatro-save-editor-gui/releases">Releases</a> ·
+        <a href="https://github.com/BurntToasters/balatro-save-editor-gui/issues">Report a bug</a>
+      </span>
     </footer>
   </body>
 </html>

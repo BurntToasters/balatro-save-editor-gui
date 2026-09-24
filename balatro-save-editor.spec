@@ -49,8 +49,8 @@ if sys.platform == 'win32':
 
 elif sys.platform == 'darwin':
     icon = 'icon/balatro-editor.icns'
-    # Set BALATRO_MAC_ARCH=universal2 when building on a universal2 Python.
-    target_arch = os.environ.get('BALATRO_MAC_ARCH') or None
+    # Apple Silicon only; fails fast on an Intel/Rosetta Python instead of shipping an x64 build.
+    target_arch = 'arm64'
 
 a = Analysis(
     ['run.py'],

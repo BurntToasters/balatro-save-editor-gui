@@ -4,6 +4,8 @@ This app was made possible from the CLI code created by: problemsalved https://g
 
 A cross-platform desktop GUI for editing [Balatro](https://www.playbalatro.com/) `save.jkr` files.
 
+![Balatro Save Editor](docs/img/app-run.png)
+
 Forked from [problemsalved/balatro_save_editor](https://github.com/problemsalved/balatro_save_editor) the original command-line editor and wrapped in a [pywebview](https://pywebview.flowrl.com/) GUI. The Python parser (raw-deflate `zlib` + byte-exact recompression validation) is reused unchanged.
 
 ## Features
@@ -22,7 +24,7 @@ The editor auto-detects your Balatro save and lets you toggle any of these chang
 | OS | Installer | Save location |
 | --- | --- | --- |
 | Windows x64 | `.exe` (NSIS) | `%APPDATA%\Balatro\<profile>\save.jkr` |
-| macOS (universal) | `.dmg` | `~/Library/Application Support/Balatro/<profile>/save.jkr` |
+| macOS (Apple Silicon) | `.dmg` | `~/Library/Application Support/Balatro/<profile>/save.jkr` |
 | Linux x64 | `.AppImage` | Steam Proton prefix (`compatdata/2379780/...`) |
 
 If a save isn't found automatically, use **Open…** to pick the file manually.
