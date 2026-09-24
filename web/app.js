@@ -151,9 +151,15 @@ async function loadPath(path, doneMsg) {
       setStatus(res.error, 'error');
       return;
     }
+    if (res.repaired) jokersDirty = true; // repaired in memory; Save writes it
     renderState(res.state);
     await loadJokers();
-    setStatus(doneMsg || `Loaded ${res.state.profile}.`);
+    if (res.repaired) {
+      const n = res.repaired;
+      setStatus(`Fixed ${n} joker edition${n === 1 ? '' : 's'} set by an older version of this app. Save to apply.`);
+    } else {
+      setStatus(doneMsg || `Loaded ${res.state.profile}.`);
+    }
   } finally {
     ioBusy--;
   }

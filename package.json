@@ -1,6 +1,6 @@
 {
   "name": "balatro-save-editor-gui",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "description": "Cross-platform GUI for editing Balatro save.jkr files",
   "productName": "Balatro Save Editor",

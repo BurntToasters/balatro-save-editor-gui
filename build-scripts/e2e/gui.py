@@ -59,6 +59,33 @@ main_save = make_save('1', ['J1', 'J2', 'J3', 'J4'], lambda t: t.replace(
     '["dollars"]=4,', '["dollars"]=4,["perishable_rounds"]=7,').replace(
     '["name"]="J4",}', '["name"]="J4",["perish_tally"]=2,}'))
 uni_save = make_save('2', ['小丑 Jöker'])
+
+# Editions: A plain; B and C as editor 1.0.0/1.0.1 wrote them (flag only); D as the game writes it.
+ED_CARD = ('[{n}]={{["ability"]={{["name"]="{name}",}},["label"]="{name}",["added_to_deck"]=true,'
+           '["save_fields"]={{["center"]="j_joker",}},{edition}}},')
+GAME_HOLO = '["edition"]={["mult"]=10,["holo"]=true,["type"]="holo",},'
+ed_cards = [('A', ''), ('B', '["edition"]={["polychrome"]=true,},'), ('C', '["edition"]={["negative"]=true,},'), ('D', GAME_HOLO)]
+ed_save = TMP / '3' / 'save.jkr'
+ed_save.parent.mkdir(parents=True)
+ed_save.write_bytes(BalatroSaveFile.compress((
+    'return{["GAME"]={["dollars"]=4,["chips"]=0,["chips_text"]="0",'
+    '["hands"]={["High Card"]={["mult"]=1,["played"]=0,},},},["BLIND"]={["chips"]=300,},'
+    '["cardAreas"]={["jokers"]={["config"]={["card_limit"]=5,["temp_limit"]=5,},["cards"]={'
+    + ''.join(ED_CARD.format(n=i + 1, name=n, edition=e) for i, (n, e) in enumerate(ed_cards)) +
+    '},},["consumeables"]={["config"]={["card_limit"]=2,["temp_limit"]=2,},["cards"]={},},},}').encode('ascii')))
+R.input('editions_save_sha256', sha256(ed_save))
+EDITION_TABLES = {
+    'foil': '{["chips"]=50,["foil"]=true,["type"]="foil",}',
+    'holo': '{["mult"]=10,["holo"]=true,["type"]="holo",}',
+    'polychrome': '{["x_mult"]=1.5,["polychrome"]=true,["type"]="polychrome",}',
+    'negative': '{["negative"]=true,["type"]="negative",}',
+}
+
+
+def editions_of(bsf):
+    jokers = bsf['cardAreas']['jokers']
+    return ({str(c['label']).strip('"'): (str(c['edition']) if 'edition' in c else None) for c in jokers['cards']},
+            str(jokers['config']['card_limit']))
 R.input('main_save_sha256', sha256(main_save))
 R.input('unicode_save_sha256', sha256(uni_save))
 
@@ -246,6 +273,55 @@ def driver():
     R.check('gui: utf-8 save shows its text', uni_rows == ['小丑 Jöker'], observed=uni_rows)
     dialogs.calls.clear()
 
+    # ---- 2c. editions: full tables, negative slot bookkeeping, repair of old half editions ----
+    js(w, f"const p=document.getElementById('profile');p.value={str(ed_save.resolve())!r};p.dispatchEvent(new Event('change'));'go'")
+    time.sleep(2.0)
+    live = lambda: editions_of(api.editor.balatro_save_file)  # noqa: E731  the app's in-memory save
+    tables, limit = live()
+    R.check('gui: old half editions repaired', tables['B'] == EDITION_TABLES['polychrome'] and tables['C'] == EDITION_TABLES['negative']
+            and limit == '6' and 'Fixed 2 joker editions' in status(w) and js(w, "!document.getElementById('dirty').hidden"),
+            observed={'tables': tables, 'card_limit': limit, 'status': status(w)}, expected='B, C completed; limit 5 + 1 for C')
+    R.check('gui: game editions untouched', tables['D'] == GAME_HOLO[len('["edition"]='):-1], observed=tables['D'])
+
+    def set_edition(label, value):
+        js(w, "const r=[...document.querySelectorAll('#joker-list .joker')].find(r=>r.querySelector('.joker-name b').textContent==="
+              f"{label!r});const s=r.querySelector('select');s.value={value!r};s.dispatchEvent(new Event('change'));'go'")
+        time.sleep(0.7)
+        return live()
+
+    seen, limits = {}, []
+    for ed in ('foil', 'holo', 'polychrome', 'negative'):
+        tables, limit = set_edition('A', ed)
+        seen[ed] = tables['A']
+        limits.append(limit)
+    shot('editions-negative-set')
+    R.check('gui: editions are complete', seen == EDITION_TABLES, observed=seen, expected=EDITION_TABLES)
+    R.check('gui: negative adds a slot', limits == ['6', '6', '6', '7'], observed=limits, expected=['6', '6', '6', '7'])
+    after_none = set_edition('A', '')[1]
+    after_neg_again = set_edition('A', 'negative')[1]
+    after_switch = set_edition('A', 'polychrome')[1]
+    back = set_edition('A', 'negative')[1]
+    R.check('gui: removing negative takes the slot back', (after_none, after_neg_again, after_switch, back) == ('6', '7', '6', '7'),
+            observed=[after_none, after_neg_again, after_switch, back], expected=['6', '7', '6', '7'])
+
+    rows_before = rows(w)
+    js(w, "[...document.querySelectorAll('#joker-list .joker')].find(r=>r.querySelector('.joker-name b').textContent==='A')"
+          ".querySelector('.quiet:not(.danger)').click();'go'")
+    time.sleep(1.0)
+    dup_limit = live()[1]
+    js(w, "[...document.querySelectorAll('#joker-list .joker')].at(-1).querySelector('.quiet.danger').click();'go'")
+    time.sleep(1.0)
+    del_limit = live()[1]
+    R.check('gui: negative delete/duplicate slots', (dup_limit, del_limit) == ('8', '7') and rows(w) == rows_before,
+            observed={'after_duplicate': dup_limit, 'after_delete': del_limit, 'rows': rows(w)})
+
+    click(w, '#save')
+    time.sleep(1.5)
+    disk_tables, disk_limit = editions_of(BalatroSaveFile(str(ed_save)))
+    R.check('gui: editions reach disk', disk_limit == '7' and disk_tables == {
+        'A': EDITION_TABLES['negative'], 'B': EDITION_TABLES['polychrome'], 'C': EDITION_TABLES['negative'],
+        'D': GAME_HOLO[len('["edition"]='):-1]}, observed={'tables': disk_tables, 'card_limit': disk_limit})
+
     # ---- 4. closing with unsaved edits asks; No keeps everything ----
     js(w, "const m=document.getElementById('val-money');m.value='77';m.dispatchEvent(new Event('input'));'go'")
     time.sleep(0.5)
@@ -291,7 +367,7 @@ api_module.subprocess = types.SimpleNamespace(
     CREATE_NEW_PROCESS_GROUP=getattr(subprocess, 'CREATE_NEW_PROCESS_GROUP', 0),
 )
 
-paths.find_saves = lambda: [main_save.resolve(), uni_save.resolve()]
+paths.find_saves = lambda: [main_save.resolve(), uni_save.resolve(), ed_save.resolve()]
 api = Api()
 dialogs = Dialogs()
 main_win = webview.create_window(TITLE, url=index_html(), js_api=api, width=W, height=H, x=X, y=Y, frameless=True, on_top=True)
