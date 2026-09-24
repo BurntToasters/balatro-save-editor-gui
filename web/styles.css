@@ -17,6 +17,12 @@
   --err: #c42b1c;
   --warn: #b26b00;
   --backdrop: rgba(0, 0, 0, 0.35);
+  /* Joker rarity, Balatro's hues (darkened for contrast on white). */
+  --rarity-1: #0a74c4;
+  --rarity-2: #1f8a5b;
+  --rarity-3: #cf3b32;
+  --rarity-4: #8d4a99;
+  --rarity-0: #6b6b6b;
   --font: system-ui, -apple-system, 'Segoe UI Variable Text', 'Segoe UI', Ubuntu, Cantarell, sans-serif;
 }
 
@@ -38,6 +44,11 @@
     --err: #ff7b72;
     --warn: #e0a040;
     --backdrop: rgba(0, 0, 0, 0.55);
+    --rarity-1: #3aaeff;
+    --rarity-2: #4bc292;
+    --rarity-3: #ff6f66;
+    --rarity-4: #c784d2;
+    --rarity-0: #a0a0a0;
   }
 }
 
@@ -489,6 +500,240 @@ fieldset:disabled .row {
 .statusbar .check {
   color: var(--muted);
   white-space: nowrap;
+}
+
+/* ---- joker picker (searchable, rarity-coloured) ---- */
+
+.r0 { --r: var(--rarity-0); }
+.r1 { --r: var(--rarity-1); }
+.r2 { --r: var(--rarity-2); }
+.r3 { --r: var(--rarity-3); }
+.r4 { --r: var(--rarity-4); }
+
+.rdot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--r);
+}
+
+.rtag {
+  flex: none;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--r);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  letter-spacing: 0.02em;
+}
+
+.jpick {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: 210px;
+  text-align: left;
+  padding: 3px 8px;
+}
+
+.jpick-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jpick-chev {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin: 0 2px 3px 4px;
+  border-right: 1.5px solid var(--muted);
+  border-bottom: 1.5px solid var(--muted);
+  transform: rotate(45deg);
+}
+
+.jpick[aria-expanded='true'] {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.jpick-pop {
+  position: fixed;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+}
+
+.jpick-pop[hidden] {
+  display: none;
+}
+
+#jpick-search {
+  flex: none;
+  margin: 8px;
+  padding: 5px 8px;
+  font: inherit;
+  color: var(--text);
+  background: var(--control);
+  border: 1px solid var(--control-border);
+  border-radius: 4px;
+  outline: none;
+}
+
+#jpick-search:focus {
+  border-color: var(--accent);
+}
+
+.jpick-list {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 4px 6px;
+}
+
+.jpick-head {
+  padding: 8px 8px 3px;
+  color: var(--r);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.jpick-opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.jpick-opt.active {
+  background: var(--selected);
+}
+
+.jpick-opt[aria-selected='true'] .jpick-name {
+  font-weight: 600;
+}
+
+.jpick-key {
+  flex: none;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.jpick-opt[aria-selected='true']::after {
+  content: '';
+  flex: none;
+  width: 4px;
+  height: 8px;
+  margin: 0 2px 2px 2px;
+  border-right: 2px solid var(--accent);
+  border-bottom: 2px solid var(--accent);
+  transform: rotate(45deg);
+}
+
+.jpick-empty {
+  padding: 10px 12px 12px;
+  color: var(--muted);
+}
+
+/* ---- sidebar footer: interface switch + settings ---- */
+
+.sidebar-foot {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 10px;
+}
+
+.seg {
+  display: flex;
+  padding: 2px;
+  gap: 2px;
+  background: var(--selected);
+  border-radius: 5px;
+}
+
+.seg button {
+  flex: 1;
+  min-height: 24px;
+  padding: 2px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+
+.seg button[aria-pressed='true'] {
+  background: var(--control);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 0 0 1px var(--control-border);
+}
+
+.side-btn {
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 6px 10px;
+}
+
+button.danger {
+  color: var(--err);
+}
+
+/* ---- settings sheet ---- */
+
+.sheet-head-end {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sheet-version {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.sheet.sheet-sm {
+  max-width: 520px;
+}
+
+.settings {
+  padding-top: 0;
+}
+
+.set-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.set-row:last-child {
+  border-bottom: 0;
+}
+
+.set-row .seg {
+  flex: none;
+  width: 150px;
+}
+
+.settings-path {
+  font-family: ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace;
+  font-size: 11px;
+  word-break: break-all;
 }
 
 /* ---- licenses sheet ---- */

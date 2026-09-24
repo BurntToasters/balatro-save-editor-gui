@@ -1,0 +1,405 @@
+/* Themed UI: the website's Balatro look (felt table, slate panels with hard drop edges,
+   chips blue / mult red / money gold). Every rule is scoped to html[data-ui='themed'];
+   styles.css alone is the Flat UI. */
+
+@font-face {
+  font-family: 'Pixelify Sans';
+  src: url('fonts/PixelifySans.ttf') format('truetype');
+  font-weight: 400 700;
+  font-display: block;
+}
+
+html[data-ui='themed'] {
+  color-scheme: dark;
+  --bg: #1d3532;
+  --sidebar: #2b3437;
+  --surface: #374244;
+  --text: #ffffff;
+  --muted: #b9c4c4;
+  --border: #1a2124;
+  --control: #1e2629;
+  --control-border: transparent;
+  --hover: rgba(255, 255, 255, 0.07);
+  --selected: rgba(255, 255, 255, 0.1);
+  --accent: #fe5f55;
+  --accent-hover: #ff7369;
+  --on-accent: #ffffff;
+  --ok: #4bc292;
+  --err: #fe5f55;
+  --warn: #f3b958;
+  --backdrop: rgba(0, 0, 0, 0.55);
+
+  --felt-dot: #25413d;
+  --inset: #2b3437;
+  --edge: #1a2124;
+  --slate: #4f6367;
+  --slate-edge: #33403f;
+  --red-edge: #a8352f;
+  --blue: #009dff;
+  --blue-edge: #005f9e;
+  --gold: #f3b958;
+  --gold-edge: #a2742a;
+  --pixel: 'Pixelify Sans', ui-monospace, monospace;
+  --rarity-0: #8b9a9c;
+  --rarity-1: #009dff;
+  --rarity-2: #4bc292;
+  --rarity-3: #fe5f55;
+  --rarity-4: #b26cbb;
+}
+
+/* ---- chrome ---- */
+
+html[data-ui='themed'] .toolbar,
+html[data-ui='themed'] .sidebar,
+html[data-ui='themed'] .statusbar {
+  background: var(--inset);
+  border-color: var(--edge);
+}
+
+html[data-ui='themed'] .toolbar {
+  border-bottom-width: 2px;
+}
+
+html[data-ui='themed'] .statusbar {
+  border-top-width: 2px;
+}
+
+html[data-ui='themed'] .sidebar {
+  border-right-width: 2px;
+}
+
+html[data-ui='themed'] .content {
+  background-color: var(--bg);
+  background-image: radial-gradient(var(--felt-dot) 1px, transparent 1px);
+  background-size: 6px 6px;
+}
+
+html[data-ui='themed'] .content h2 {
+  font-family: var(--pixel);
+  font-weight: 500;
+  font-size: 20px;
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.45);
+}
+
+html[data-ui='themed'] .content h2 .muted {
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 600;
+  text-shadow: none;
+}
+
+html[data-ui='themed'] :focus-visible {
+  outline-color: var(--gold);
+}
+
+/* ---- buttons: flat, hard bottom edge, press down ---- */
+
+html[data-ui='themed'] button {
+  position: relative;
+  top: 0;
+  border: 0;
+  border-radius: 6px;
+  padding: 5px 14px 4px;
+  background: var(--slate);
+  color: var(--text);
+  font-family: var(--pixel);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+  box-shadow: 0 3px 0 var(--slate-edge);
+}
+
+html[data-ui='themed'] button:hover:not(:disabled) {
+  background: #5b7074;
+}
+
+html[data-ui='themed'] button:active:not(:disabled) {
+  top: 3px;
+  box-shadow: none;
+}
+
+html[data-ui='themed'] button:disabled {
+  opacity: 0.45;
+}
+
+html[data-ui='themed'] button.primary {
+  background: var(--accent);
+  box-shadow: 0 3px 0 var(--red-edge);
+  padding: 5px 22px 4px;
+}
+
+html[data-ui='themed'] button.primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+html[data-ui='themed'] button.primary:disabled {
+  background: var(--slate);
+  box-shadow: 0 3px 0 var(--slate-edge);
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+html[data-ui='themed'] button.danger:not(.quiet) {
+  background: var(--accent);
+  box-shadow: 0 3px 0 var(--red-edge);
+  color: var(--on-accent);
+}
+
+html[data-ui='themed'] button.quiet,
+html[data-ui='themed'] .nav-item,
+html[data-ui='themed'] .side-btn,
+html[data-ui='themed'] .seg button {
+  background: transparent;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+html[data-ui='themed'] button.quiet:hover:not(:disabled),
+html[data-ui='themed'] .nav-item:hover,
+html[data-ui='themed'] .side-btn:hover {
+  background: var(--hover);
+}
+
+html[data-ui='themed'] button.quiet:active:not(:disabled),
+html[data-ui='themed'] .nav-item:active,
+html[data-ui='themed'] .side-btn:active,
+html[data-ui='themed'] .seg button:active {
+  top: 0;
+}
+
+html[data-ui='themed'] button.quiet.danger {
+  color: var(--accent);
+}
+
+/* ---- sidebar ---- */
+
+html[data-ui='themed'] .nav-item,
+html[data-ui='themed'] .side-btn {
+  font-size: 15px;
+  padding: 6px 10px 5px;
+}
+
+html[data-ui='themed'] .nav-item.active {
+  background: var(--accent);
+  box-shadow: 0 3px 0 var(--red-edge);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+  font-weight: 500;
+}
+
+html[data-ui='themed'] .nav-item.active::before {
+  display: none;
+}
+
+html[data-ui='themed'] .seg {
+  background: var(--edge);
+  border-radius: 7px;
+  padding: 3px;
+  gap: 3px;
+}
+
+html[data-ui='themed'] .seg button {
+  color: var(--muted);
+  padding: 3px 6px 2px;
+  border-radius: 5px;
+}
+
+html[data-ui='themed'] .seg button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: none;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+  font-weight: 500;
+}
+
+/* ---- fields ---- */
+
+html[data-ui='themed'] select,
+html[data-ui='themed'] input[type='number'] {
+  background: var(--control);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text);
+  box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.25);
+}
+
+html[data-ui='themed'] select:hover,
+html[data-ui='themed'] input[type='number']:hover {
+  border-color: var(--slate);
+}
+
+/* ---- panels: the website's "poker hands" rows ---- */
+
+html[data-ui='themed'] .group {
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+  background: var(--surface);
+  border: 0;
+  border-radius: 10px;
+  box-shadow: 0 4px 0 var(--edge);
+}
+
+html[data-ui='themed'] .group > * + * {
+  border-top: 0;
+}
+
+html[data-ui='themed'] .row,
+html[data-ui='themed'] .joker {
+  background: var(--inset);
+  border-radius: 7px;
+}
+
+html[data-ui='themed'] .row-title,
+html[data-ui='themed'] .joker-name b {
+  font-family: var(--pixel);
+  font-weight: 500;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+
+html[data-ui='themed'] .empty {
+  padding: 14px 12px;
+}
+
+/* Current values as Balatro pills. Numbers stay in the system font: at this size the
+   pixel font's 5 reads as S. */
+html[data-ui='themed'] .row-sub b {
+  display: inline-block;
+  margin: 1px 1px 3px;
+  padding: 1px 7px 0;
+  border-radius: 5px;
+  background: var(--slate);
+  box-shadow: 0 2px 0 var(--slate-edge);
+  color: var(--text);
+  font-weight: 700;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+html[data-ui='themed'] #cur-money {
+  background: var(--gold);
+  box-shadow: 0 2px 0 var(--gold-edge);
+  color: #3b2a0c;
+  text-shadow: none;
+}
+
+html[data-ui='themed'] #cur-blind {
+  background: var(--blue);
+  box-shadow: 0 2px 0 var(--blue-edge);
+}
+
+html[data-ui='themed'] #cur-mult {
+  background: var(--accent);
+  box-shadow: 0 2px 0 var(--red-edge);
+}
+
+/* ---- joker picker ---- */
+
+html[data-ui='themed'] .jpick {
+  font-family: var(--font);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-shadow: none;
+  padding: 3px 8px;
+  background: var(--control);
+  border: 1px solid transparent;
+  box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.25);
+}
+
+html[data-ui='themed'] .jpick:hover:not(:disabled) {
+  background: var(--control);
+  border-color: var(--slate);
+}
+
+html[data-ui='themed'] .jpick:active:not(:disabled) {
+  top: 0;
+  box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.25);
+}
+
+html[data-ui='themed'] .jpick[aria-expanded='true'] {
+  outline-color: var(--gold);
+}
+
+html[data-ui='themed'] .jpick-pop {
+  background: var(--surface);
+  border: 0;
+  border-radius: 10px;
+  box-shadow: 0 4px 0 var(--edge), 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+html[data-ui='themed'] #jpick-search {
+  background: var(--control);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.25);
+}
+
+html[data-ui='themed'] #jpick-search:focus {
+  border-color: var(--gold);
+}
+
+html[data-ui='themed'] .jpick-head {
+  font-family: var(--pixel);
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  text-transform: none;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+}
+
+html[data-ui='themed'] .jpick-opt.active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+html[data-ui='themed'] .jpick-opt[aria-selected='true']::after {
+  border-color: var(--gold);
+}
+
+html[data-ui='themed'] .rtag {
+  font-family: var(--pixel);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* ---- status bar ---- */
+
+html[data-ui='themed'] .dirty {
+  color: var(--gold);
+}
+
+/* ---- sheets ---- */
+
+html[data-ui='themed'] .sheet {
+  background: var(--surface);
+  border: 0;
+  border-radius: 10px;
+  box-shadow: 0 4px 0 var(--edge), 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+html[data-ui='themed'] .sheet-head {
+  border-bottom: 2px solid var(--inset);
+}
+
+html[data-ui='themed'] .sheet-head h2 {
+  font-family: var(--pixel);
+  font-weight: 500;
+  font-size: 18px;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.45);
+}
+
+html[data-ui='themed'] .set-row,
+html[data-ui='themed'] .license-entry {
+  border-bottom-color: var(--inset);
+}
+
+html[data-ui='themed'] .license-entry pre {
+  background: var(--control);
+  border: 0;
+}
+
+html[data-ui='themed'] a {
+  color: var(--gold);
+}

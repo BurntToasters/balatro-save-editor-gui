@@ -2,6 +2,14 @@ import pytest
 
 from app.editor import BalatroSaveFile
 
+
+@pytest.fixture(autouse=True)
+def isolated_settings(tmp_path, monkeypatch):
+    # Never read or write the real per-user settings.json from tests.
+    config = tmp_path / 'config'
+    monkeypatch.setenv('BALATRO_EDITOR_CONFIG_DIR', str(config))
+    return config
+
 # Minimal Balatro-style save body exercising all 5 presets.
 SAMPLE = (
     'return{'

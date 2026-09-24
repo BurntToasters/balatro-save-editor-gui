@@ -1,4 +1,7 @@
-from . import paths, resources
+import subprocess
+import sys
+
+from . import __version__, paths, resources, settings, updates
 from .editor import BalatroSaveEditor, JokerEditor, joker_catalog
 
 
@@ -24,11 +27,53 @@ class Api:
             return True
         return bool(self._window.create_confirmation_dialog(str(title), str(message)))
 
+    def restart(self):
+        # Start a fresh copy of the app, then close this one.
+        if getattr(sys, 'frozen', False):
+            argv, cwd = [sys.executable], None
+        else:
+            argv, cwd = [sys.executable, '-m', 'app.main'], resources.resource_base()
+        kwargs = {'cwd': cwd, 'close_fds': True}
+        if sys.platform.startswith('win'):
+            kwargs['creationflags'] = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+        else:
+            kwargs['start_new_session'] = True
+        try:
+            subprocess.Popen(argv, **kwargs)
+        except OSError as e:
+            return {'ok': False, 'error': f'Could not restart: {e}'}
+        if self._window is not None:
+            self._window.destroy()
+        return {'ok': True}
+
     # ---- info ----
 
     def app_info(self):
-        app = resources.load_licenses().get('app') or {}
-        return {'version': app.get('version'), 'debug': self._debug}
+        return {
+            'version': __version__,
+            'debug': self._debug,
+            'settings': settings.load(),
+            'settings_path': str(settings.path()),
+        }
+
+    # ---- updates ----
+
+    def check_for_updates(self):
+        return updates.check()
+
+    # ---- settings ----
+
+    def set_setting(self, key, value):
+        try:
+            return {'ok': True, 'settings': settings.save({key: value})}
+        except (OSError, ValueError) as e:
+            return {'ok': False, 'error': str(e)}
+
+    def reset_settings(self):
+        try:
+            return {'ok': True, 'settings': settings.reset()}
+        except OSError as e:
+            return {'ok': False, 'error': str(e)}
 
     def get_licenses(self):
         return resources.load_licenses()
