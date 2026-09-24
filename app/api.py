@@ -170,7 +170,12 @@ class Api:
             self.editor = BalatroSaveEditor(path)
             self.save_path = path
             self._stamp = stamp
-            return {'ok': True, 'state': self.get_state()}
+            # Editions set by editor 1.0.0/1.0.1 lack their effect; fix in memory, saved on Save.
+            try:
+                repaired = self._joker_editor().repair_editions()
+            except Exception:
+                repaired = 0  # no joker area (e.g. not a run save): nothing to repair
+            return {'ok': True, 'state': self.get_state(), 'repaired': repaired}
         except Exception as e:
             self.editor = None
             self.save_path = None

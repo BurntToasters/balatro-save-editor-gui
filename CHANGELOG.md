@@ -1,10 +1,13 @@
 ## ⬇️ Downloads
 
-- **Windows - Installer:** [<u>x64</u>](https://github.com/BurntToasters/balatro-save-editor-gui/releases/download/v1.0.1/Balatro-Save-Editor-1.0.1-win-x64.exe) ([sig](https://github.com/BurntToasters/balatro-save-editor-gui/releases/download/v1.0.1/Balatro-Save-Editor-1.0.1-win-x64.exe.asc))
-- **macOS - arm64 DMG:** [<u>arm64</u>](https://github.com/BurntToasters/balatro-save-editor-gui/releases/download/v1.0.1/Balatro-Save-Editor-1.0.1-mac-arm64.dmg) ([sig](https://github.com/BurntToasters/balatro-save-editor-gui/releases/download/v1.0.1/Balatro-Save-Editor-1.0.1-mac-arm64.dmg.asc))
-- **Linux - AppImage:** [<u>x64</u>](https://github.com/BurntToasters/balatro-save-editor-gui/releases/download/v1.0.1/Balatro-Save-Editor-1.0.1-linux-x64.AppImage) ([sig](https://github.com/BurntToasters/balatro-save-editor-gui/releases/download/v1.0.1/Balatro-Save-Editor-1.0.1-linux-x64.AppImage.asc))
+- **Windows - Installer:** [<u>x64</u>](https://github.com/BurntToasters/balatro-save-editor-gui/releases/download/v1.0.2/Balatro-Save-Editor-1.0.2-win-x64.exe) ([sig](https://github.com/BurntToasters/balatro-save-editor-gui/releases/download/v1.0.2/Balatro-Save-Editor-1.0.2-win-x64.exe.asc))
+- **macOS - arm64 DMG:** [<u>arm64</u>](https://github.com/BurntToasters/balatro-save-editor-gui/releases/download/v1.0.2/Balatro-Save-Editor-1.0.2-mac-arm64.dmg) ([sig](https://github.com/BurntToasters/balatro-save-editor-gui/releases/download/v1.0.2/Balatro-Save-Editor-1.0.2-mac-arm64.dmg.asc))
+- **Linux - AppImage:** [<u>x64</u>](https://github.com/BurntToasters/balatro-save-editor-gui/releases/download/v1.0.2/Balatro-Save-Editor-1.0.2-linux-x64.AppImage) ([sig](https://github.com/BurntToasters/balatro-save-editor-gui/releases/download/v1.0.2/Balatro-Save-Editor-1.0.2-linux-x64.AppImage.asc))
 
 *GPG Pubkey: https://tuxedo.rosie.run/GPG/BurntToasters_0xF2FBC20F_public.asc*
+
+## 1.0.2
+* **Joker Editions:** Fixed an issue where only the joker addition shader was applied when adding/modifying jokers and not the actual gameplay modifier.
 
 ## 1.0.1
 * **Saving:** `BSE GUI` now notices when Balatro changes your save while the app is open. It reloads automatically, or asks before overwriting if you have unsaved edits.

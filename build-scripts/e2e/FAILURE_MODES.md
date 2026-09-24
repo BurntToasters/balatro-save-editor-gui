@@ -27,6 +27,24 @@ Written before the fixes, per AGENTS.md. Each item names the E2E check that cove
 - A joker that already has a tally keeps it (don't reset a half-used one).
   -> `gui: existing tally kept`
 
+## 2c. Editions only half applied (reported on 1.0.1)
+Balatro 1.0.1 (card.lua, from the installed game) keeps a card's whole edition table in the
+save and loads it as-is: `Card:set_edition` writes the effect value (`chips`=50 foil,
+`mult`=10 holo, `x_mult`=1.5 polychrome), the flag, and `type`; `get_edition()` scores from
+the value; the tooltip badge needs `type`. The editor wrote only the flag, so the shader showed
+but the effect and badge didn't.
+- Setting each edition must write the full table Balatro writes. -> `gui: editions are complete`
+- Negative: every negative joker in play adds 1 to `cardAreas.jokers.config.card_limit`
+  (`set_edition` / `add_to_deck` +1, `remove_from_deck` -1). The editor must keep that true:
+  - make a joker negative: +1; take negative off (or switch to another edition): -1;
+    switching between non-negative editions: 0 -> `gui: negative adds a slot`,
+    `gui: removing negative takes the slot back`
+  - delete a negative joker: -1; duplicate one: +1 -> `gui: negative delete/duplicate slots`
+- Saves already edited by 1.0.0 / 1.0.1 (flag only, no `type`) must be repaired on load with
+  the same rules (negative repaired = +1 slot), shown to the user, and written on the next Save.
+  -> `gui: old half editions repaired`
+- A complete edition written by the game must be left exactly as it is. -> `gui: game editions untouched`
+
 ## 3. Save write is not atomic
 - An error halfway through writing must leave the original save byte-for-byte intact.
   -> `save: failed write keeps original`

@@ -5,6 +5,16 @@ from .save_file import make_entry
 EDITIONS = ('foil', 'holo', 'polychrome', 'negative')
 STICKERS = ('eternal', 'perishable', 'rental')
 
+# The whole card.edition table Balatro's Card:set_edition writes (card.lua), with the values
+# from game.lua's e_foil / e_holo / e_polychrome config.extra. Scoring reads the value
+# (get_edition) and the tooltip badge reads `type`; the flag alone only draws the shader.
+EDITION_TABLES = {
+    'foil': '{["chips"]=50,["foil"]=true,["type"]="foil",}',
+    'holo': '{["mult"]=10,["holo"]=true,["type"]="holo",}',
+    'polychrome': '{["x_mult"]=1.5,["polychrome"]=true,["type"]="polychrome",}',
+    'negative': '{["negative"]=true,["type"]="negative",}',
+}
+
 # Standard ability fields present on every joker (mirrors what Balatro writes);
 # the target joker's config is overlaid on top.
 _ABILITY_BASE = {
@@ -105,13 +115,7 @@ class JokerEditor(object):
         if 'save_fields' in card and 'center' in card['save_fields']:
             center = _strval(card['save_fields']['center'])
 
-        edition = None
-        if 'edition' in card:
-            ed = card['edition']
-            for key in EDITIONS:
-                if key in ed and str(ed[key]) == 'true':
-                    edition = key
-                    break
+        edition = self._edition_of(card)
 
         stickers = []
         if ability is not None:
@@ -130,12 +134,34 @@ class JokerEditor(object):
     # ---- modify existing ----
 
     def set_edition(self, pos, edition):
+        if edition and edition not in EDITIONS:
+            raise ValueError(f'Unknown edition: {edition}')
         card = self._card(pos)
+        was_negative = self._edition_of(card) == 'negative'
         card.delete_entry('edition')
         if edition:
-            if edition not in EDITIONS:
-                raise ValueError(f'Unknown edition: {edition}')
-            card.insert_entry(make_entry(f'["edition"]={{["{edition}"]=true,}},'))
+            card.insert_entry(make_entry(f'["edition"]={EDITION_TABLES[edition]},'))
+        self._negative_slot(card, int(edition == 'negative') - int(was_negative))
+
+    def repair_editions(self):
+        """Complete edition tables that hold only the flag (written by editor 1.0.0 / 1.0.1).
+
+        Balatro always writes `type`, so a table without it came from an editor. Returns how
+        many jokers were repaired; the caller saves them on the next write.
+        """
+        repaired = 0
+        for card in self._cards():
+            if 'edition' not in card or 'type' in card['edition']:
+                continue
+            edition = self._edition_of(card)
+            if edition is None:
+                continue  # unknown (modded) edition: leave it alone
+            card.delete_entry('edition')
+            card.insert_entry(make_entry(f'["edition"]={EDITION_TABLES[edition]},'))
+            if edition == 'negative':
+                self._negative_slot(card, 1)  # the old editor never added the slot
+            repaired += 1
+        return repaired
 
     def set_sticker(self, pos, sticker, on):
         if sticker not in STICKERS:
@@ -168,12 +194,18 @@ class JokerEditor(object):
 
     def duplicate_joker(self, pos):
         cards = self._cards()
-        cards.append_value(str(cards.entry_at(pos).value))
+        source = cards.entry_at(pos).value
+        cards.append_value(str(source))
         cards.reindex()
         self._sync_count()
+        if self._edition_of(source) == 'negative':
+            self._negative_slot(source, 1)  # like add_to_deck for the copy
 
     def delete_joker(self, pos):
         cards = self._cards()
+        card = cards.entry_at(pos).value
+        if self._edition_of(card) == 'negative':
+            self._negative_slot(card, -1)  # like remove_from_deck
         cards.delete_at(pos)
         cards.reindex()
         self._sync_count()
@@ -236,6 +268,24 @@ class JokerEditor(object):
         elif 'ability' in card and 'name' in card['ability']:
             # Unknown/modded center: keep cloned ability, just rename.
             card['ability']['name'] = name
+
+    @staticmethod
+    def _edition_of(card):
+        if 'edition' not in card:
+            return None
+        ed = card['edition']
+        for key in EDITIONS:
+            if key in ed and str(ed[key]) == 'true':
+                return key
+        return None
+
+    def _negative_slot(self, card, delta):
+        # Balatro counts each negative joker in play as one extra joker slot
+        # (set_edition / add_to_deck +1, remove_from_deck -1), and the slot count is saved.
+        if not delta or 'added_to_deck' not in card or str(card['added_to_deck']) != 'true':
+            return
+        cfg = self._jokers()['config']
+        cfg['card_limit'] = str(int(float(str(cfg['card_limit']))) + delta)
 
     def _sync_count(self):
         cfg = self._jokers()['config']
