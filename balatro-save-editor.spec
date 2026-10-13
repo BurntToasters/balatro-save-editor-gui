@@ -69,6 +69,13 @@ a = Analysis(
     noarchive=False,
 )
 
+if sys.platform.startswith('linux'):
+    # Leave the target system's own C++ runtime, graphics and desktop libraries to it: the host's
+    # GL drivers load into the app and break against the build image's older copies (#17).
+    with open('build-scripts/linux-host-libs.txt', encoding='utf-8') as _f:
+        _host_libs = {line.strip() for line in _f if line.strip() and not line.startswith('#')}
+    a.binaries = [b for b in a.binaries if os.path.basename(b[0]) not in _host_libs]
+
 pyz = PYZ(a.pure)
 
 exe = EXE(

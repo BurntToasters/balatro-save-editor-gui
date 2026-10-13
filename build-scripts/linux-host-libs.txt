@@ -1,0 +1,52 @@
+# Libraries the Linux bundle takes from the target system and must never ship.
+# Read by balatro-save-editor.spec (drops them) and verify-linux-compat.py (fails if one is back).
+#
+# Source: the AppImage project's excludelist (glibc entries left out; PyInstaller already skips
+# them): https://github.com/AppImageCommunity/pkg2appimage/blob/master/excludelist
+# Every glibc 2.28+ desktop has these. Shipping the build image's older copies breaks the host's
+# graphics drivers, which load into the app and link against them: the bundled GCC 8 libstdc++
+# kept Mesa from loading on Linux Mint 21/22 (#17).
+
+# C/C++ runtime
+libstdc++.so.6
+libgcc_s.so.1
+
+# OpenGL / EGL / GBM / DRM (must match the host's drivers)
+libGL.so.1
+libEGL.so.1
+libGLdispatch.so.0
+libGLX.so.0
+libOpenGL.so.0
+libglapi.so.0
+libgbm.so.1
+libdrm.so.2
+
+# X11 / Wayland clients
+libxcb.so.1
+libxcb-dri2.so.0
+libxcb-dri3.so.0
+libX11.so.6
+libX11-xcb.so.1
+libICE.so.6
+libSM.so.6
+libwayland-client.so.0
+
+# Fonts and text
+libfontconfig.so.1
+libfreetype.so.6
+libharfbuzz.so.0
+libfribidi.so.0
+
+# Audio
+libasound.so.2
+libjack.so.0
+libpipewire-0.3.so.0
+
+# Base system
+libcom_err.so.2
+libexpat.so.1
+libgmp.so.10
+libgpg-error.so.0
+libusb-1.0.so.0
+libuuid.so.1
+libz.so.1
