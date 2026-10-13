@@ -17,6 +17,7 @@ const SUITES = {
   gpg: 'build-scripts/e2e/gpg.py',
   release: 'build-scripts/e2e/release.py',
   build: 'build-scripts/e2e/build.py',
+  linux: 'build-scripts/e2e/linux.py',
 };
 
 const ARTIFACTS = process.env.BSE_E2E_ARTIFACTS || path.join(ROOT, 'e2e-artifacts');

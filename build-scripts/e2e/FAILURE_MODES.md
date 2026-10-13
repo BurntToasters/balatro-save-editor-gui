@@ -131,3 +131,15 @@ but the effect and badge didn't.
 ## 12. E2E runs leave no artifact
 - Every E2E run writes a JSON report (each check, pass/fail, observed values) plus screenshots
   to `e2e-artifacts/`, and exits non-zero on any failure. -> the report itself
+
+## 13. Linux AppImage requires a newer glibc than the supported system
+- Building on a current Linux host can make bundled CPython require that host's glibc. The
+  AppImage must instead build in the pinned manylinux_2_28 environment. ->
+  `linux: pinned compatibility build`
+- Every ELF file in the PyInstaller bundle must require at most `GLIBC_2.28`; one newer
+  transitive native dependency must fail the build before packaging. ->
+  `linux: bundle requires glibc 2.28 or older`
+- The bundle must contain its Qt WebEngine backend instead of relying on whichever GTK/WebKit
+  packages happen to exist on the build or target machine. -> `linux: Qt backend bundled`
+- The frozen app must stay running with Qt's offscreen backend in a clean baseline container;
+  missing native Qt dependencies must fail E2E. -> `linux: frozen app starts on baseline`

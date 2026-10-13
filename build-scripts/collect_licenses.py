@@ -166,7 +166,8 @@ def write_txt(data):
 
 
 def main():
-    closure = runtime_closure(['pywebview'])
+    roots = sys.argv[1:] or ['pywebview']
+    closure = runtime_closure(roots)
     pkg_entries = []
     for key in sorted(closure):
         dist = closure[key]

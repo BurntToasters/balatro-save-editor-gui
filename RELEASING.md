@@ -18,7 +18,8 @@ Builds are per-platform: run the matching command on a machine of that OS/arch
 - Windows: [NSIS](https://nsis.sourceforge.io/) 3.08+ (`makensis` on PATH); the Azure
   Artifact Signing `AZURE_*` values in `.env`; then once, as Administrator:
   `npm run setup:win:artifact-signing` (installs Microsoft's Artifact Signing Client Tools)
-- Linux: `appimagetool` on PATH
+- Linux x64: Docker and `appimagetool` on PATH. The release build uses pinned
+  `manylinux_2_28` CPython and bundled Qt so it runs on glibc 2.28+ systems.
 
 ## Bump the version
 
@@ -42,7 +43,7 @@ Each command runs, in order:
 
 | Step | mac | win | linux |
 | --- | --- | --- | --- |
-| `build` (PyInstaller) | ✓ | ✓ | ✓ |
+| `build` (PyInstaller) | ✓ | ✓ | `build:linux` in pinned container |
 | `sign:mac` (codesign, hardened runtime) | ✓ | – | – |
 | `sign:win` (Authenticode on the app `.exe`) | – | ✓ | – |
 | `dist:*` (installer) | `.dmg` | `.exe` (uninstaller + installer Authenticode-signed) | `.AppImage` |
@@ -91,5 +92,6 @@ macOS notarization: `xcrun stapler validate <installer>.dmg`
 npm run publish:dry   # show repo/tag/assets without uploading
 npm run test:scripts  # unit tests for the release helpers
 npm run e2e           # end-to-end suites, incl. a real install/upgrade/uninstall of a test installer
+npm run e2e -- linux  # real container build + ELF glibc compatibility report (Linux only)
 npm run clean         # remove build/ dist/ release/
 ```

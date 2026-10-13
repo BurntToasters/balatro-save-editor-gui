@@ -17,6 +17,15 @@ if (!fs.existsSync(path.join(sourceDir, appName))) {
   process.exit(1);
 }
 
+const verify = spawnSync('python3', ['build-scripts/verify-linux-compat.py', sourceDir], {
+  cwd: ROOT,
+  stdio: 'inherit',
+});
+if (verify.error || verify.status !== 0) {
+  console.error('Linux bundle failed glibc compatibility verification. Run: npm run build:linux');
+  process.exit(verify.status === null ? 1 : verify.status);
+}
+
 // appimagetool is often an AppImage that needs FUSE; self-extract avoids that
 // on headless VMs/containers where FUSE is unavailable.
 const childEnv = { ...process.env, APPIMAGE_EXTRACT_AND_RUN: '1' };
