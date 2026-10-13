@@ -9,7 +9,7 @@ RUN sed -i \
       /etc/yum.repos.d/almalinux*.repo \
     && sed -i \
       -e 's|^metalink=|#metalink=|' \
-      -e 's|^#baseurl=https://download.example/pub/epel/|baseurl=https://download.fedoraproject.org/pub/epel/|' \
+      -e 's|^#baseurl=https://download.example/pub/epel/8/|baseurl=https://archives.fedoraproject.org/pub/archive/epel/8.9/|' \
       /etc/yum.repos.d/epel*.repo \
     && dnf install --assumeyes \
       alsa-lib bzip2-devel libffi-devel libXcomposite libXdamage libXi libXrandr libxslt \
