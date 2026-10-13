@@ -133,6 +133,9 @@ but the effect and badge didn't.
   to `e2e-artifacts/`, and exits non-zero on any failure. -> the report itself
 
 ## 13. Linux AppImage requires a newer glibc than the supported system
+- EPEL 8 live mirrors can disappear or publish inconsistent metadata after EPEL 8 end of
+  life. The build must use an immutable archived snapshot for its Qt native dependency. ->
+  `linux: pinned compatibility build`
 - Building on a current Linux host can make bundled CPython require that host's glibc. The
   AppImage must instead build in the pinned manylinux_2_28 environment. ->
   `linux: pinned compatibility build`
