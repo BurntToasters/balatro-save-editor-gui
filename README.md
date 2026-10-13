@@ -60,10 +60,11 @@ npm run test:scripts # includes a check that docs/ matches docs/CNAME
 
 ## Building
 
-PyInstaller produces a standalone app for the platform you run it on (it cannot cross-compile, so build each target on its own machine).
+PyInstaller produces a standalone app for the platform you run it on (it cannot cross-compile, so build each target on its own machine). Linux release builds use Docker to hold the glibc baseline at 2.28.
 
 ```bash
 npm run build         # PyInstaller bundle -> dist/
+npm run build:linux   # Linux x64 release bundle in pinned manylinux container
 npm run smoke:runtime # launch the built app to confirm it starts
 npm run dist          # wrap into the platform installer -> release/
 ```
