@@ -8,6 +8,7 @@
 
 ## 1.0.3
 * **FIX - Linux AppImage:** Fixed startup failures on Linux Mint 21.1 and other glibc 2.28+ systems. Linux builds now use a compatible glibc baseline and bundle the Qt webview backend instead of relying on system GTK/Python extensions. [#17]
+  - The AppImage no longer ships its own copies of system libraries (C++ runtime, graphics, X11). They stopped your system's graphics drivers from loading, so the app crashed at launch with `Could not initialize GLX`.
 
 ## 1.0.2
 * **Joker Editions:** Fixed an issue where only the joker addition shader was applied when adding/modifying jokers and not the actual gameplay modifier.

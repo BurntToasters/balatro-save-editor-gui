@@ -141,8 +141,36 @@ but the effect and badge didn't.
   `linux: pinned compatibility build`
 - Every ELF file in the PyInstaller bundle must require at most `GLIBC_2.28`; one newer
   transitive native dependency must fail the build before packaging. ->
-  `linux: bundle requires glibc 2.28 or older`
+  `linux: bundle within the glibc 2.28 baseline`
 - The bundle must contain its Qt WebEngine backend instead of relying on whichever GTK/WebKit
   packages happen to exist on the build or target machine. -> `linux: Qt backend bundled`
-- The frozen app must stay running with Qt's offscreen backend in a clean baseline container;
-  missing native Qt dependencies must fail E2E. -> `linux: frozen app starts on baseline`
+- The frozen app must start on the glibc 2.28 baseline itself; missing native Qt dependencies
+  must fail E2E. -> `linux: renders on real X11 (AlmaLinux 8, glibc 2.28 baseline)`
+
+## 14. AppImage aborts on Linux Mint 21/22 with "Could not initialize GLX" (reported on 1.0.3, #17)
+Reproduced in Ubuntu 22.04 / 24.04 containers (the Mint 21 / 22 bases) with Xvfb and the
+distro's Mesa: `glxinfo` works, the frozen app core-dumps. PyInstaller copied the build image's
+own `libstdc++.so.6` (GCC 8, at most `GLIBCXX_3.4.25`) into the bundle and its bootloader puts
+the bundle first on `LD_LIBRARY_PATH`. The host's Mesa (`libGLX_mesa` -> `libgallium` ->
+`libLLVM`) needs `GLIBCXX_3.4.26`-`3.4.32`, so it cannot load inside the app: Mesa 23 fails
+context creation and Chromium aborts; Mesa 24+ makes libglvnd drop the vendor silently, Qt finds
+no FBConfig and calls qFatal. The 1.0.3 E2E ran the app with `QT_QPA_PLATFORM=offscreen`, which
+never opens an X11 window or loads GLX, so it passed.
+- The bundle must not ship libraries the target's graphics stack and desktop provide
+  (`libstdc++`, `libgcc_s`, `libgbm`, `libX11`, `libexpat`, `libz`, ... -
+  `build-scripts/linux-host-libs.txt`, from the AppImage project's excludelist). One of them
+  coming back must fail the build. -> `linux: host libraries not bundled`
+- With `libstdc++`/`libgcc_s` from the host, no bundled ELF may need a C++ runtime newer than the
+  glibc 2.28 baseline has (`GLIBCXX_3.4.25`, `CXXABI_1.3.11`, `GCC_7.0.0`), or the app fails on
+  the oldest supported systems instead. -> `linux: bundle within the glibc 2.28 baseline`
+- The host's GLX/EGL/GBM/DRI libraries must link exactly as well with the bundle on the library
+  path as without it (no new missing versions or undefined symbols), on the baseline and on the
+  Mint 21 / 22 bases. -> `linux: host GL stack loads beside bundle (<target>)`
+- The app must render on a real X server with the target's own Mesa and no software-rendering
+  overrides, stay running, and log no GL failures (`Could not initialize GLX`,
+  `MESA-LOADER: failed`, `QRhiGles2: Failed`, ...). A blank window must fail too; the screenshot
+  is kept. -> `linux: renders on real X11 (<target>)`
+- A library left to the host that a target desktop does not have stops the app from starting
+  (seen while testing: `libasound.so.2` on a minimal image). The E2E targets install only the
+  packages that provide `linux-host-libs.txt`, plus X and Mesa, so a new host dependency fails
+  there first. -> `linux: renders on real X11 (<target>)`

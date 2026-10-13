@@ -92,6 +92,6 @@ macOS notarization: `xcrun stapler validate <installer>.dmg`
 npm run publish:dry   # show repo/tag/assets without uploading
 npm run test:scripts  # unit tests for the release helpers
 npm run e2e           # end-to-end suites, incl. a real install/upgrade/uninstall of a test installer
-npm run e2e -- linux  # real container build + ELF glibc compatibility report (Linux only)
+npm run e2e -- linux  # container build, ELF baseline report, launch on AlmaLinux 8 / Ubuntu 22.04 / 24.04 X11 (Docker)
 npm run clean         # remove build/ dist/ release/
 ```
