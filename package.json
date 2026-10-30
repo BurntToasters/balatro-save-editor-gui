@@ -22,8 +22,8 @@
     "cross-platform"
   ],
   "engines": {
-    "node": ">=24.x",
-    "npm": ">=12.x"
+    "node": "^24.22.1 || >=26.13.0",
+    "npm": ">=12.2.1"
   },
   "scripts": {
     "venv": "node build-scripts/setup-venv.js",

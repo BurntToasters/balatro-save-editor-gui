@@ -35,7 +35,7 @@ If a save isn't found automatically, use **Open…** to pick the file manually.
 
 ## Development
 
-Requires Python 3.14+ and Node 24+.
+Requires Python 3.14+, Node.js 26.13.0 LTS (or `^24.22.1`), and npm 12.2.1+.
 
 ```bash
 npm run venv      # create .venv and install Python deps
